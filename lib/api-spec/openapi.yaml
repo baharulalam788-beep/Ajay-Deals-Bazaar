@@ -189,6 +189,20 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/OrderStatus"
+  /admin/products:
+    get:
+      operationId: listAdminProducts
+      tags: [admin]
+      summary: List products with private digital-code inventory
+      responses:
+        "200":
+          description: Products and their five inventory slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminProduct"
   /admin/products/{id}:
     patch:
       operationId: updateProduct
@@ -234,18 +248,12 @@ paths:
     post:
       operationId: confirmOrder
       tags: [admin]
-      summary: Confirm payment and deliver first key
+      summary: Confirm payment and deliver the next available digital code
       parameters:
         - name: id
           in: path
           required: true
           schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/KeyInput"
       responses:
         "200":
           description: Confirmed order
@@ -287,7 +295,7 @@ components:
         - status
     Product:
       type: object
-      required: [id, title, description, price, originalPrice, imageUrl, category, inStock]
+      required: [id, title, description, price, originalPrice, imageUrl, category, inStock, stockAvailable, stockTotal]
       properties:
         id: { type: string }
         title: { type: string }
@@ -297,6 +305,33 @@ components:
         imageUrl: { type: string }
         category: { type: string }
         inStock: { type: boolean }
+        stockAvailable: { type: integer, minimum: 0, maximum: 5 }
+        stockTotal: { type: integer, minimum: 0, maximum: 5 }
+    AdminStockSlot:
+      type: object
+      required: [code, sold]
+      properties:
+        code: { type: string, maxLength: 500 }
+        sold: { type: boolean }
+    AdminProduct:
+      type: object
+      required: [id, title, description, price, originalPrice, imageUrl, category, inStock, stockAvailable, stockTotal, stockCodes]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        imageUrl: { type: string }
+        category: { type: string }
+        inStock: { type: boolean }
+        stockAvailable: { type: integer, minimum: 0, maximum: 5 }
+        stockTotal: { type: integer, minimum: 0, maximum: 5 }
+        stockCodes:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/AdminStockSlot"
     StoreSettings:
       type: object
       required: [upiId, qrImageUrl]
@@ -349,7 +384,7 @@ components:
         authenticated: { type: boolean }
     ProductUpdate:
       type: object
-      required: [title, description, price, originalPrice, imageData, category, inStock]
+      required: [title, description, price, originalPrice, imageData, category, inStock, stockCodes]
       properties:
         title: { type: string }
         description: { type: string }
@@ -358,6 +393,11 @@ components:
         imageData: { type: string, maxLength: 7000000 }
         category: { type: string }
         inStock: { type: boolean }
+        stockCodes:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items: { type: string, maxLength: 500 }
     KeyInput:
       type: object
       required: [key]
