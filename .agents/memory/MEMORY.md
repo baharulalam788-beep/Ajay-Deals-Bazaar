@@ -1,0 +1,1 @@
+- [Ajay Deals Bazaar product scope](ajay-deals-bazaar-scope.md) — sell top-up codes and e-vouchers only; do not add game-account sales.

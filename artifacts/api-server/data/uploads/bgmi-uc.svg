@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#fff0d7"/><stop offset="1" stop-color="#ffbd66"/></linearGradient></defs>
+  <rect width="640" height="480" rx="36" fill="url(#g)"/><circle cx="507" cy="85" r="120" fill="#fff" opacity=".25"/>
+  <path d="M320 69 178 130v91c0 93 53 154 142 192 89-38 142-99 142-192v-91z" fill="#e28414"/>
+  <path d="M252 151h136v141H252z" rx="12" fill="#fff7e8"/><path d="M285 151v-28c0-22 16-39 35-39s35 17 35 39v28" fill="none" stroke="#fff7e8" stroke-width="17"/>
+  <circle cx="320" cy="215" r="13" fill="#e28414"/><path d="M320 229v28" stroke="#e28414" stroke-width="12" stroke-linecap="round"/>
+  <text x="320" y="406" text-anchor="middle" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#784000">660 UC VOUCHER</text>
+</svg>

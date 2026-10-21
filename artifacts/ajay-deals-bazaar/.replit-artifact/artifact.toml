@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Ajay Deals Bazaar"
+description = "A mobile-friendly digital products store for gaming top-up codes and e-vouchers, with manual UPI checkout, order tracking, and an admin panel for product and order management."
+version = "1.0.0"
+id = "artifacts/ajay-deals-bazaar"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18309
+
+[services.development]
+run = "pnpm --filter @workspace/ajay-deals-bazaar run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ajay-deals-bazaar", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ajay-deals-bazaar/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18309"
+BASE_PATH = "/"

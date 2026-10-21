@@ -1,0 +1,61 @@
+import { readJson, writeJson, type ProductRecord } from "./store-data";
+
+const productSeeds: ProductRecord[] = [
+  {
+    id: "free-fire-100",
+    title: "Free Fire 100 Diamonds",
+    description: "Digital top-up voucher for 100 in-game diamonds.",
+    price: 79,
+    originalPrice: 99,
+    imageUrl: "/api/uploads/free-fire-100.svg",
+    category: "Gaming top-up",
+    inStock: true,
+  },
+  {
+    id: "free-fire-520",
+    title: "Free Fire 520 Diamonds",
+    description: "Digital top-up voucher for 520 in-game diamonds.",
+    price: 399,
+    originalPrice: 499,
+    imageUrl: "/api/uploads/free-fire-520.svg",
+    category: "Gaming top-up",
+    inStock: true,
+  },
+  {
+    id: "bgmi-uc",
+    title: "BGMI 660 UC Voucher",
+    description: "Digital voucher for 660 UC in Battlegrounds Mobile India.",
+    price: 499,
+    originalPrice: 599,
+    imageUrl: "/api/uploads/bgmi-uc.svg",
+    category: "Gaming top-up",
+    inStock: true,
+  },
+  {
+    id: "google-play",
+    title: "Google Play E-Voucher",
+    description: "Digital Google Play gift voucher. Region and terms apply.",
+    price: 250,
+    originalPrice: 300,
+    imageUrl: "/api/uploads/google-play.svg",
+    category: "E-voucher",
+    inStock: true,
+  },
+  {
+    id: "playstation",
+    title: "PlayStation Store Wallet",
+    description: "Digital PlayStation Store wallet voucher. Region and terms apply.",
+    price: 999,
+    originalPrice: 1199,
+    imageUrl: "/api/uploads/playstation.svg",
+    category: "E-voucher",
+    inStock: true,
+  },
+];
+
+export async function seedProductsIfEmpty(): Promise<void> {
+  const products = await readJson<ProductRecord[]>("products");
+  if (products.length === 0) {
+    await writeJson("products", productSeeds);
+  }
+}

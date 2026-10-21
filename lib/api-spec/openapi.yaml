@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: store
+    description: Public storefront and order operations
+  - name: admin
+    description: Administrator operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,254 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /store/products:
+    get:
+      operationId: listProducts
+      tags: [store]
+      summary: List storefront products
+      responses:
+        "200":
+          description: The five configured products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+  /store/products/{id}:
+    get:
+      operationId: getProduct
+      tags: [store]
+      summary: Get a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Product not found
+  /store/settings:
+    get:
+      operationId: getStoreSettings
+      tags: [store]
+      summary: Get payment details
+      responses:
+        "200":
+          description: Public payment settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreSettings"
+  /store/orders:
+    post:
+      operationId: createOrder
+      tags: [store]
+      summary: Create a manual-payment order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
+        "400":
+          description: Invalid order details
+  /store/orders/{id}:
+    get:
+      operationId: getOrderStatus
+      tags: [store]
+      summary: Get order status and delivered keys
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Order status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
+        "404":
+          description: Order not found
+  /store/orders/{id}/request-second-key:
+    post:
+      operationId: requestSecondKey
+      tags: [store]
+      summary: Request the second digital unlock key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Request recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
+        "404":
+          description: Order not found
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Sign in to the admin panel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginInput"
+      responses:
+        "200":
+          description: Login accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Invalid credentials
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin]
+      summary: Sign out of the admin panel
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+  /admin/session:
+    get:
+      operationId: getAdminSession
+      tags: [admin]
+      summary: Check admin session
+      responses:
+        "200":
+          description: Session state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+  /admin/orders:
+    get:
+      operationId: listOrders
+      tags: [admin]
+      summary: List all orders
+      responses:
+        "200":
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OrderStatus"
+  /admin/products/{id}:
+    patch:
+      operationId: updateProduct
+      tags: [admin]
+      summary: Update a product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /admin/settings:
+    put:
+      operationId: updateStoreSettings
+      tags: [admin]
+      summary: Update UPI settings and QR image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StoreSettings"
+  /admin/orders/{id}/confirm:
+    post:
+      operationId: confirmOrder
+      tags: [admin]
+      summary: Confirm payment and deliver first key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyInput"
+      responses:
+        "200":
+          description: Confirmed order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
+  /admin/orders/{id}/second-key:
+    post:
+      operationId: deliverSecondKey
+      tags: [admin]
+      summary: Deliver the requested second key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KeyInput"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +285,82 @@ components:
           type: string
       required:
         - status
+    Product:
+      type: object
+      required: [id, title, description, price, originalPrice, imageUrl, category, inStock]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        imageUrl: { type: string }
+        category: { type: string }
+        inStock: { type: boolean }
+    StoreSettings:
+      type: object
+      required: [upiId, qrImageUrl]
+      properties:
+        upiId: { type: string }
+        qrImageUrl: { type: string }
+    StoreSettingsUpdate:
+      type: object
+      required: [upiId]
+      properties:
+        upiId: { type: string }
+        qrImageData:
+          type: string
+          maxLength: 7000000
+    OrderInput:
+      type: object
+      required: [productId, name, whatsapp, utr]
+      properties:
+        productId: { type: string }
+        name: { type: string, minLength: 2, maxLength: 100 }
+        whatsapp: { type: string, minLength: 8, maxLength: 20 }
+        utr: { type: string, pattern: "^[0-9]{12}$" }
+    OrderStatus:
+      type: object
+      required: [id, productId, productTitle, productImageUrl, amount, name, whatsapp, utr, status, createdAt, secondKeyRequested]
+      properties:
+        id: { type: string }
+        productId: { type: string }
+        productTitle: { type: string }
+        productImageUrl: { type: string }
+        amount: { type: number }
+        name: { type: string }
+        whatsapp: { type: string }
+        utr: { type: string }
+        status: { type: string, enum: [pending, confirmed] }
+        createdAt: { type: string }
+        firstKey: { type: ["string", "null"] }
+        secondKey: { type: ["string", "null"] }
+        secondKeyRequested: { type: boolean }
+    AdminLoginInput:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string }
+        password: { type: string }
+    AdminSession:
+      type: object
+      required: [authenticated]
+      properties:
+        authenticated: { type: boolean }
+    ProductUpdate:
+      type: object
+      required: [title, description, price, originalPrice, imageData, category, inStock]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        originalPrice: { type: number }
+        imageData: { type: string, maxLength: 7000000 }
+        category: { type: string }
+        inStock: { type: boolean }
+    KeyInput:
+      type: object
+      required: [key]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 500 }
 
