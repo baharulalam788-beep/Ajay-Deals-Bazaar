@@ -20,13 +20,19 @@ export const HealthCheckResponse = zod.object({
 /**
  * @summary List storefront products
  */
+export const listProductsResponseImagesItemMax = 500;
+
+export const listProductsResponseImagesMax = 15;
+
+
+
 export const ListProductsResponseItem = zod.object({
   "id": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
   "price": zod.number(),
   "originalPrice": zod.number(),
-  "imageUrl": zod.string(),
+  "images": zod.array(zod.string().max(listProductsResponseImagesItemMax)).max(listProductsResponseImagesMax),
   "category": zod.string(),
   "inStock": zod.boolean()
 })
@@ -40,13 +46,19 @@ export const GetProductParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const getProductResponseImagesItemMax = 500;
+
+export const getProductResponseImagesMax = 15;
+
+
+
 export const GetProductResponse = zod.object({
   "id": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
   "price": zod.number(),
   "originalPrice": zod.number(),
-  "imageUrl": zod.string(),
+  "images": zod.array(zod.string().max(getProductResponseImagesItemMax)).max(getProductResponseImagesMax),
   "category": zod.string(),
   "inStock": zod.boolean()
 })
@@ -202,7 +214,9 @@ export const UpdateProductParams = zod.object({
   "id": zod.coerce.string()
 })
 
-export const updateProductBodyImageDataMax = 7000000;
+export const updateProductBodyImagesItemMax = 500;
+
+export const updateProductBodyImagesMax = 15;
 
 
 
@@ -211,10 +225,16 @@ export const UpdateProductBody = zod.object({
   "description": zod.string(),
   "price": zod.number(),
   "originalPrice": zod.number(),
-  "imageData": zod.string().max(updateProductBodyImageDataMax),
+  "images": zod.array(zod.string().max(updateProductBodyImagesItemMax)).max(updateProductBodyImagesMax),
   "category": zod.string(),
   "inStock": zod.boolean()
 })
+
+export const updateProductResponseImagesItemMax = 500;
+
+export const updateProductResponseImagesMax = 15;
+
+
 
 export const UpdateProductResponse = zod.object({
   "id": zod.string(),
@@ -222,9 +242,29 @@ export const UpdateProductResponse = zod.object({
   "description": zod.string(),
   "price": zod.number(),
   "originalPrice": zod.number(),
-  "imageUrl": zod.string(),
+  "images": zod.array(zod.string().max(updateProductResponseImagesItemMax)).max(updateProductResponseImagesMax),
   "category": zod.string(),
   "inStock": zod.boolean()
+})
+
+
+/**
+ * @summary Upload a product gallery image
+ */
+export const UploadProductImageParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const uploadProductImageBodyImageDataMax = 7000000;
+
+
+
+export const UploadProductImageBody = zod.object({
+  "imageData": zod.string().max(uploadProductImageBodyImageDataMax)
+})
+
+export const UploadProductImageResponse = zod.object({
+  "url": zod.string()
 })
 
 

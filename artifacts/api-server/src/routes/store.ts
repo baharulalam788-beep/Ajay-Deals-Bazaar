@@ -15,6 +15,7 @@ import {
 } from "@workspace/api-zod";
 import {
   readJson,
+  readProducts,
   writeJson,
   type OrderRecord,
   type ProductRecord,
@@ -44,7 +45,7 @@ router.use("/uploads", express.static(STORE_UPLOADS_DIR, { fallthrough: true }))
 
 router.get("/store/products", async (_req, res): Promise<void> => {
   await seedProductsIfEmpty();
-  const products = await readJson<ProductRecord[]>("products");
+  const products = await readProducts();
   res.json(ListProductsResponse.parse(products.map(storefrontProduct)));
 });
 
@@ -55,7 +56,7 @@ router.get("/store/products/:id", async (req, res): Promise<void> => {
     return;
   }
   await seedProductsIfEmpty();
-  const products = await readJson<ProductRecord[]>("products");
+  const products = await readProducts();
   const product = products.find((item) => item.id === params.data.id);
   if (!product) {
     res.status(404).json({ error: "Product not found" });
@@ -76,7 +77,7 @@ router.post("/store/orders", orderBodyParser, async (req, res): Promise<void> =>
     return;
   }
   await seedProductsIfEmpty();
-  const products = await readJson<ProductRecord[]>("products");
+  const products = await readProducts();
   const product = products.find((item) => item.id === body.data.productId);
   if (!product) {
     res.status(404).json({ error: "Product not found" });
@@ -95,7 +96,7 @@ router.post("/store/orders", orderBodyParser, async (req, res): Promise<void> =>
     id: randomUUID(),
     productId: product.id,
     productTitle: product.title,
-    productImageUrl: product.imageUrl,
+    productImageUrl: product.images[0] ?? "",
     amount: product.price,
     name: body.data.name.trim(),
     whatsapp: body.data.whatsapp.trim(),

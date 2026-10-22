@@ -1,6 +1,8 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { ProductGallery } from '@/components/product-gallery';
+import { ProductImagesEditor } from '@/components/product-images-editor';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -78,7 +80,7 @@ function PageShell({ children }: { children: ReactNode }) {
 }
 function ProductVisual({ product, index = 0, large = false }: { product: Product; index?: number; large?: boolean }) {
   return <div className="product-art" style={{ background: `linear-gradient(145deg, ${productColors[index % productColors.length]}, ${productColors[index % productColors.length]}dd)` }}>
-    {product.imageUrl ? <img src={product.imageUrl} alt={product.title} className="absolute inset-0 h-full w-full object-cover" /> :
+    {product.images?.[0] ? <img src={product.images[0]} alt={product.title} className="absolute inset-0 h-full w-full object-cover" /> :
       <><span className="absolute left-5 top-5 rounded-full border border-white/30 px-3 py-1 text-[9px] font-bold uppercase tracking-[.15em] text-white/80">{product.category}</span><span className={`product-glyph ${large ? '!text-6xl' : ''}`}>{glyphFor(product)}</span><Sparkles className="absolute bottom-5 right-5 text-white/55" size={large ? 25 : 18} /></>}
   </div>;
 }
@@ -140,7 +142,7 @@ function ProductPage({ id }: { id: string }) {
   return <PageShell><div className="shell py-9">
     <Link href="/" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold text-[#61716a] no-underline" data-testid="link-back-products"><ArrowLeft size={16}/> Back to the Bazaar</Link>
     <div className="grid gap-8 md:grid-cols-[1.05fr_.95fr]">
-      <ProductVisual product={product} large />
+      <ProductGallery product={product} />
       <div className="flex flex-col justify-center py-2"><span className="section-label">{product.category}</span><h1 className="display mt-3 text-4xl font-semibold leading-tight tracking-[-.05em]">{product.title}</h1>
         <p className="mt-4 max-w-lg text-[15px] leading-7 text-[#65716c]" data-testid={`text-product-description-${product.id}`}>{product.description}</p>
         <div className="mt-6 flex items-baseline gap-3"><strong className="display text-3xl">{money(product.price)}</strong><del className="text-[#849089]">{money(product.originalPrice)}</del><span className="badge badge-green">Save {Math.max(0,Math.round((1-product.price/product.originalPrice)*100))}%</span></div>
@@ -258,12 +260,13 @@ function AdminPanel() {
   const logout=useAdminLogout({request:{credentials:'same-origin'}});
   const [tab,setTab]=useState<'orders'|'products'|'settings'>('orders');
   const [editId,setEditId]=useState('');
-  const [form,setForm]=useState({title:'',description:'',price:'',originalPrice:'',category:'',inStock:true,imageData:''});
+   const [form,setForm]=useState({title:'',description:'',price:'',originalPrice:'',category:'',inStock:true,images:[] as string[]});
+   const [imagesReady,setImagesReady]=useState(true);
   const [upiId,setUpiId]=useState(''); const [qrImageData,setQrImageData]=useState(''); const [notice,setNotice]=useState('');
   const authenticated=!!session.data?.authenticated;
    const updateProduct=useUpdateProduct({request:{credentials:'same-origin'}}); const updateSettings=useUpdateStoreSettings({request:{credentials:'same-origin'}}); const confirm=useConfirmOrder({request:{credentials:'same-origin'}}); const reject=useRejectOrder({request:{credentials:'same-origin'}});
-  const setProductForm=(p:Product)=>{setEditId(p.id);setForm({title:p.title,description:p.description,price:String(p.price),originalPrice:String(p.originalPrice),category:p.category,inStock:p.inStock,imageData:''});setNotice('');};
-  const saveProduct=(e:React.FormEvent)=>{e.preventDefault();if(!editId)return;updateProduct.mutate({id:editId,data:{...form,price:Number(form.price),originalPrice:Number(form.originalPrice),imageData:form.imageData||''}},{onSuccess:async()=>{setNotice('Product saved.');await qc.invalidateQueries({queryKey:getListProductsQueryKey()});await qc.invalidateQueries({queryKey:getGetProductQueryKey(editId)});},onError:e=>setNotice(errorMessage(e))});};
+   const setProductForm=(p:Product)=>{setEditId(p.id);setForm({title:p.title,description:p.description,price:String(p.price),originalPrice:String(p.originalPrice),category:p.category,inStock:p.inStock,images:p.images??[]});setImagesReady(true);setNotice('');};
+   const saveProduct=(e:React.FormEvent)=>{e.preventDefault();if(!editId)return;if(!imagesReady){setNotice('Wait for image uploads to finish or remove any failed uploads before saving.');return;}updateProduct.mutate({id:editId,data:{title:form.title,description:form.description,price:Number(form.price),originalPrice:Number(form.originalPrice),category:form.category,inStock:form.inStock,images:form.images}},{onSuccess:async()=>{setNotice('Product saved.');await qc.invalidateQueries({queryKey:getListProductsQueryKey()});await qc.invalidateQueries({queryKey:getGetProductQueryKey(editId)});},onError:e=>setNotice(errorMessage(e))});};
   const saveSettings=(e:React.FormEvent)=>{e.preventDefault();updateSettings.mutate({data:{upiId, ...(qrImageData?{qrImageData}:{})}},{onSuccess:async()=>{setNotice('Payment settings saved.');await qc.invalidateQueries({queryKey:getGetStoreSettingsQueryKey()});},onError:e=>setNotice(errorMessage(e))});};
   useEffect(()=>{if(settingsQuery.data)setUpiId(settingsQuery.data.upiId);},[settingsQuery.data?.upiId]);
   if(session.isLoading)return <div className="shell py-12"><div className="skeleton mx-auto h-[380px] max-w-[450px]"/></div>;
@@ -291,9 +294,9 @@ function AdminPanel() {
           <label className="text-xs font-bold">Price (₹)<input className="field mt-1.5 text-sm" type="number" min="1" value={form.price} onChange={e=>setForm({...form,price:e.target.value})} required data-testid="input-product-price"/></label>
           <label className="text-xs font-bold">Original price (₹)<input className="field mt-1.5 text-sm" type="number" min="1" value={form.originalPrice} onChange={e=>setForm({...form,originalPrice:e.target.value})} required data-testid="input-product-original-price"/></label>
           <label className="text-xs font-bold sm:col-span-2">Description<textarea className="field mt-1.5 min-h-24 resize-y text-sm" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} required data-testid="input-product-description"/></label>
-          <div className="sm:col-span-2"><ImageField label="Product artwork (optional)" testId="input-product-image" onChange={v=>setForm({...form,imageData:v})}/></div>
+          <ProductImagesEditor key={editId} productId={editId} images={form.images} onChange={images=>setForm(current=>({...current,images}))} onReadyChange={setImagesReady}/>
           <label className="flex items-center gap-3 text-sm font-semibold sm:col-span-2"><input type="checkbox" checked={form.inStock} onChange={e=>setForm({...form,inStock:e.target.checked})} className="h-4 w-4 accent-[#17675b]" data-testid="input-product-stock"/> Available for purchase</label>
-          <div className="flex gap-2 sm:col-span-2"><button disabled={updateProduct.isPending} className="btn btn-primary" data-testid="button-save-product">{updateProduct.isPending?'Saving…':'Save product'}</button><button type="button" className="btn btn-outline" onClick={()=>setEditId('')} data-testid="button-cancel-product-edit">Cancel</button></div>
+          <div className="flex gap-2 sm:col-span-2"><button disabled={updateProduct.isPending||!imagesReady} className="btn btn-primary" data-testid="button-save-product">{updateProduct.isPending?'Saving…':'Save product'}</button><button type="button" className="btn btn-outline" onClick={()=>{setEditId('');setImagesReady(true);}} data-testid="button-cancel-product-edit">Cancel</button></div>
         </form>:<div className="mt-8 rounded-xl border border-dashed border-[#ccd3ca] p-8 text-center"><ImagePlus size={24} className="mx-auto text-[#7d8a82]"/><p className="mt-3 text-sm font-semibold">Pick an item from your shelf</p><p className="mt-1 text-xs text-[#75817b]">Its details will open here for editing.</p></div>}
       </div>
     </section>}

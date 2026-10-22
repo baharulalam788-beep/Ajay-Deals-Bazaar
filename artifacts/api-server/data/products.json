@@ -5,9 +5,11 @@
     "description": "After Payment Id Pass will be given in the whatsapp",
     "price": 999,
     "originalPrice": 999,
-    "imageUrl": "/api/uploads/product-1792583160317-abb9ce8d-5b43-48ba-be78-ec203da6d28e.jpg",
     "category": "Gaming",
-    "inStock": true
+    "inStock": true,
+    "images": [
+      "/api/uploads/product-1792583160317-abb9ce8d-5b43-48ba-be78-ec203da6d28e.jpg"
+    ]
   },
   {
     "id": "free-fire-520",
@@ -15,9 +17,11 @@
     "description": "After Payment Wait 1-2 Min Id Pass Will be given in page",
     "price": 1999,
     "originalPrice": 1999,
-    "imageUrl": "/api/uploads/product-1792583293257-e6b2b44b-5b44-4191-b57c-6f3d85d2df83.jpg",
     "category": "Gaming",
-    "inStock": true
+    "inStock": true,
+    "images": [
+      "/api/uploads/product-1792583293257-e6b2b44b-5b44-4191-b57c-6f3d85d2df83.jpg"
+    ]
   },
   {
     "id": "bgmi-uc",
@@ -25,9 +29,11 @@
     "description": "Digital voucher for 660 UC in Battlegrounds Mobile India.",
     "price": 799,
     "originalPrice": 999,
-    "imageUrl": "/api/uploads/product-1792584071773-99afe6cd-817c-4610-b42d-194b398f3804.jpg",
     "category": "Gaming",
-    "inStock": true
+    "inStock": true,
+    "images": [
+      "/api/uploads/product-1792584071773-99afe6cd-817c-4610-b42d-194b398f3804.jpg"
+    ]
   },
   {
     "id": "google-play",
@@ -35,9 +41,12 @@
     "description": "After Payment Wait 1-2 min than id pass will be shown in the page",
     "price": 1299,
     "originalPrice": 1499,
-    "imageUrl": "/api/uploads/product-1792584165327-a94f9e55-e6b3-4471-b813-3d8cfa397ad3.jpg",
     "category": "Gaming",
-    "inStock": true
+    "inStock": true,
+    "images": [
+      "/api/uploads/product-1792584165327-a94f9e55-e6b3-4471-b813-3d8cfa397ad3.jpg",
+      "/api/uploads/product-1792584230525-7085620f-4f4f-4925-b347-48394f2df59c.jpg"
+    ]
   },
   {
     "id": "playstation",
@@ -45,8 +54,10 @@
     "description": "After Payment Wait 1-2 min than id pass will be shown in the page",
     "price": 499,
     "originalPrice": 729,
-    "imageUrl": "/api/uploads/product-1792584230525-7085620f-4f4f-4925-b347-48394f2df59c.jpg",
     "category": "Gaming",
-    "inStock": true
+    "inStock": true,
+    "images": [
+      "/api/uploads/product-1792584230525-7085620f-4f4f-4925-b347-48394f2df59c.jpg"
+    ]
   }
 ]

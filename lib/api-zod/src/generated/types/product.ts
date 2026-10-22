@@ -12,7 +12,11 @@ export interface Product {
   description: string;
   price: number;
   originalPrice: number;
-  imageUrl: string;
+  /**
+     * @maxItems 15
+     * @items.maxLength 500
+     */
+  images: string[];
   category: string;
   inStock: boolean;
 }

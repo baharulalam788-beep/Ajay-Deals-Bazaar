@@ -15,9 +15,22 @@ export interface Product {
   description: string;
   price: number;
   originalPrice: number;
-  imageUrl: string;
+  /**
+     * @maxItems 15
+     * @items.maxLength 500
+     */
+  images: string[];
   category: string;
   inStock: boolean;
+}
+
+export interface ProductImageUploadInput {
+  /** @maxLength 7000000 */
+  imageData: string;
+}
+
+export interface ProductImageUpload {
+  url: string;
 }
 
 export interface StoreSettings {
@@ -88,8 +101,11 @@ export interface ProductUpdate {
   description: string;
   price: number;
   originalPrice: number;
-  /** @maxLength 7000000 */
-  imageData: string;
+  /**
+     * @maxItems 15
+     * @items.maxLength 500
+     */
+  images: string[];
   category: string;
   inStock: boolean;
 }

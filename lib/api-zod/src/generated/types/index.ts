@@ -14,6 +14,8 @@ export * from './orderInput';
 export * from './orderStatus';
 export * from './orderStatusStatus';
 export * from './product';
+export * from './productImageUpload';
+export * from './productImageUploadInput';
 export * from './productUpdate';
 export * from './storeSettings';
 export * from './storeSettingsUpdate';

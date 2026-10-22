@@ -17,11 +17,15 @@ import {
   UpdateProductBody,
   UpdateProductParams,
   UpdateProductResponse,
+  UploadProductImageBody,
+  UploadProductImageParams,
+  UploadProductImageResponse,
   UpdateStoreSettingsBody,
   UpdateStoreSettingsResponse,
 } from "@workspace/api-zod";
 import {
   readJson,
+  readProducts,
   saveImageData,
   writeJson,
   type OrderRecord,
@@ -121,6 +125,38 @@ router.get("/admin/orders", requireAdmin, async (_req, res): Promise<void> => {
   res.json(ListOrdersResponse.parse(orders));
 });
 
+router.post(
+  "/admin/products/:id/images",
+  requireAdmin,
+  adminBodyParser,
+  async (req, res): Promise<void> => {
+    const params = UploadProductImageParams.safeParse(req.params);
+    const body = UploadProductImageBody.safeParse(req.body);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    await seedProductsIfEmpty();
+    const products = await readProducts();
+    if (!products.some((item) => item.id === params.data.id)) {
+      res.status(404).json({ error: "Product not found." });
+      return;
+    }
+    try {
+      const url = await saveImageData(body.data.imageData, "product");
+      res.json(UploadProductImageResponse.parse({ url }));
+    } catch (error) {
+      res.status(400).json({
+        error: error instanceof Error ? error.message : "Image upload failed.",
+      });
+    }
+  },
+);
+
 router.patch(
   "/admin/products/:id",
   requireAdmin,
@@ -137,22 +173,30 @@ router.patch(
       return;
     }
     await seedProductsIfEmpty();
-    const products = await readJson<ProductRecord[]>("products");
+    const products = await readProducts();
     const index = products.findIndex((item) => item.id === params.data.id);
     if (index < 0) {
       res.status(404).json({ error: "Product not found." });
       return;
     }
-    const imageUrl = body.data.imageData
-      ? await saveImageData(body.data.imageData, "product")
-      : products[index].imageUrl;
+    const knownImages = new Set(products[index].images);
+    const validImageUrl = /^\/api\/uploads\/[A-Za-z0-9][A-Za-z0-9._-]*$/;
+    if (
+      body.data.images.some(
+        (url) => !knownImages.has(url) && !validImageUrl.test(url),
+      ) ||
+      new Set(body.data.images).size !== body.data.images.length
+    ) {
+      res.status(400).json({ error: "Choose images already uploaded for this product." });
+      return;
+    }
     const updated: ProductRecord = {
       ...products[index],
       title: body.data.title.trim(),
       description: body.data.description.trim(),
       price: body.data.price,
       originalPrice: body.data.originalPrice,
-      imageUrl,
+      images: body.data.images,
       category: body.data.category.trim(),
       inStock: body.data.inStock,
     };
@@ -163,7 +207,7 @@ router.patch(
       "orders",
       orders.map((order) =>
         order.productId === updated.id
-          ? { ...order, productTitle: updated.title, productImageUrl: updated.imageUrl }
+          ? { ...order, productTitle: updated.title, productImageUrl: updated.images[0] ?? "" }
           : order,
       ),
     );

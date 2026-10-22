@@ -7,9 +7,14 @@ export type ProductRecord = {
   description: string;
   price: number;
   originalPrice: number;
-  imageUrl: string;
+  images: string[];
   category: string;
   inStock: boolean;
+};
+
+type LegacyProductRecord = Omit<ProductRecord, "images"> & {
+  imageUrl?: string;
+  images?: unknown;
 };
 
 export type OrderRecord = {
@@ -65,6 +70,32 @@ export async function readJson<T>(key: keyof typeof files): Promise<T> {
   await ensureStoreFiles();
   const content = await readFile(files[key], "utf8");
   return JSON.parse(content) as T;
+}
+
+export async function readProducts(): Promise<ProductRecord[]> {
+  const stored = await readJson<LegacyProductRecord[]>("products");
+  let needsMigration = false;
+  const products = stored.map((product) => {
+    const rawImages = product.images;
+    const validImages = Array.isArray(rawImages)
+      ? rawImages.filter((image): image is string => typeof image === "string" && image.length > 0)
+      : typeof product.imageUrl === "string" && product.imageUrl
+        ? [product.imageUrl]
+        : [];
+    const images = validImages.slice(0, 15);
+    if (
+      !Array.isArray(rawImages) ||
+      product.imageUrl !== undefined ||
+      validImages.length !== images.length ||
+      validImages.length !== rawImages.length
+    ) {
+      needsMigration = true;
+    }
+    const { imageUrl: _legacyImageUrl, ...currentFields } = product;
+    return { ...currentFields, images } as ProductRecord;
+  });
+  if (needsMigration) await writeJson("products", products);
+  return products;
 }
 
 export async function writeJson<T>(

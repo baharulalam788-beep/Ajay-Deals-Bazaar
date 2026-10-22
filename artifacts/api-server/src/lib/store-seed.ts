@@ -1,4 +1,4 @@
-import { readJson, writeJson, type ProductRecord } from "./store-data";
+import { readProducts, writeJson, type ProductRecord } from "./store-data";
 
 const productSeeds: ProductRecord[] = [
   {
@@ -7,7 +7,7 @@ const productSeeds: ProductRecord[] = [
     description: "Digital top-up voucher for 100 in-game diamonds.",
     price: 79,
     originalPrice: 99,
-    imageUrl: "/api/uploads/free-fire-100.svg",
+    images: ["/api/uploads/free-fire-100.svg"],
     category: "Gaming top-up",
     inStock: true,
   },
@@ -17,7 +17,7 @@ const productSeeds: ProductRecord[] = [
     description: "Digital top-up voucher for 520 in-game diamonds.",
     price: 399,
     originalPrice: 499,
-    imageUrl: "/api/uploads/free-fire-520.svg",
+    images: ["/api/uploads/free-fire-520.svg"],
     category: "Gaming top-up",
     inStock: true,
   },
@@ -27,7 +27,7 @@ const productSeeds: ProductRecord[] = [
     description: "Digital voucher for 660 UC in Battlegrounds Mobile India.",
     price: 499,
     originalPrice: 599,
-    imageUrl: "/api/uploads/bgmi-uc.svg",
+    images: ["/api/uploads/bgmi-uc.svg"],
     category: "Gaming top-up",
     inStock: true,
   },
@@ -37,7 +37,7 @@ const productSeeds: ProductRecord[] = [
     description: "Digital Google Play gift voucher. Region and terms apply.",
     price: 250,
     originalPrice: 300,
-    imageUrl: "/api/uploads/google-play.svg",
+    images: ["/api/uploads/google-play.svg"],
     category: "E-voucher",
     inStock: true,
   },
@@ -47,14 +47,14 @@ const productSeeds: ProductRecord[] = [
     description: "Digital PlayStation Store wallet voucher. Region and terms apply.",
     price: 999,
     originalPrice: 1199,
-    imageUrl: "/api/uploads/playstation.svg",
+    images: ["/api/uploads/playstation.svg"],
     category: "E-voucher",
     inStock: true,
   },
 ];
 
 export async function seedProductsIfEmpty(): Promise<void> {
-  const products = await readJson<ProductRecord[]>("products");
+  const products = await readProducts();
   if (products.length === 0) {
     await writeJson("products", productSeeds);
   }

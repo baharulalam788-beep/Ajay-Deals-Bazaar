@@ -11,8 +11,11 @@ export interface ProductUpdate {
   description: string;
   price: number;
   originalPrice: number;
-  /** @maxLength 7000000 */
-  imageData: string;
+  /**
+     * @maxItems 15
+     * @items.maxLength 500
+     */
+  images: string[];
   category: string;
   inStock: boolean;
 }

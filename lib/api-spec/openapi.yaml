@@ -212,6 +212,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Product"
+  /admin/products/{id}/images:
+    post:
+      operationId: uploadProductImage
+      tags: [admin]
+      summary: Upload a product gallery image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductImageUploadInput"
+      responses:
+        "200":
+          description: Uploaded image URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductImageUpload"
+        "400":
+          description: Invalid image
+        "404":
+          description: Product not found
   /admin/settings:
     put:
       operationId: updateStoreSettings
@@ -298,16 +325,29 @@ components:
         - status
     Product:
       type: object
-      required: [id, title, description, price, originalPrice, imageUrl, category, inStock]
+      required: [id, title, description, price, originalPrice, images, category, inStock]
       properties:
         id: { type: string }
         title: { type: string }
         description: { type: string }
         price: { type: number }
         originalPrice: { type: number }
-        imageUrl: { type: string }
+        images:
+          type: array
+          maxItems: 15
+          items: { type: string, maxLength: 500 }
         category: { type: string }
         inStock: { type: boolean }
+    ProductImageUploadInput:
+      type: object
+      required: [imageData]
+      properties:
+        imageData: { type: string, maxLength: 7000000 }
+    ProductImageUpload:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string }
     StoreSettings:
       type: object
       required: [upiId, qrImageUrl]
@@ -360,13 +400,16 @@ components:
         authenticated: { type: boolean }
     ProductUpdate:
       type: object
-      required: [title, description, price, originalPrice, imageData, category, inStock]
+      required: [title, description, price, originalPrice, images, category, inStock]
       properties:
         title: { type: string }
         description: { type: string }
         price: { type: number }
         originalPrice: { type: number }
-        imageData: { type: string, maxLength: 7000000 }
+        images:
+          type: array
+          maxItems: 15
+          items: { type: string, maxLength: 500 }
         category: { type: string }
         inStock: { type: boolean }
     KeyInput:
