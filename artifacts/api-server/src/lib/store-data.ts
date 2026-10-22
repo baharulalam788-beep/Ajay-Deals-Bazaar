@@ -10,12 +10,6 @@ export type ProductRecord = {
   imageUrl: string;
   category: string;
   inStock: boolean;
-  stockCodes?: StockCodeRecord[];
-};
-
-export type StockCodeRecord = {
-  code: string;
-  soldOrderId: string | null;
 };
 
 export type OrderRecord = {
@@ -27,7 +21,7 @@ export type OrderRecord = {
   name: string;
   whatsapp: string;
   utr: string;
-  status: "pending" | "confirmed";
+  status: "pending" | "confirmed" | "rejected";
   createdAt: string;
   firstKey: string | null;
   secondKey: string | null;
@@ -47,13 +41,7 @@ const files = {
   settings: path.join(dataDir, "settings.json"),
 } as const;
 
-let writeQueue: Promise<unknown> = Promise.resolve();
-
-function enqueueWrite<T>(operation: () => Promise<T>): Promise<T> {
-  const next = writeQueue.then(operation, operation);
-  writeQueue = next.then(() => undefined, () => undefined);
-  return next;
-}
+let writeQueue = Promise.resolve();
 
 export async function ensureStoreFiles(): Promise<void> {
   await mkdir(uploadsDir, { recursive: true });
@@ -83,75 +71,16 @@ export async function writeJson<T>(
   key: keyof typeof files,
   value: T,
 ): Promise<void> {
-  return enqueueWrite(async () => {
+  const run = async (): Promise<void> => {
     await ensureStoreFiles();
     const destination = files[key];
     const temp = `${destination}.${process.pid}.tmp`;
     await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
     await rename(temp, destination);
-  });
-}
-
-export function normalizeStockCodes(product: ProductRecord): StockCodeRecord[] {
-  return Array.from({ length: 5 }, (_, index) => (
-    product.stockCodes?.[index] ?? { code: "", soldOrderId: null }
-  ));
-}
-
-export function productStockCounts(product: ProductRecord): {
-  stockAvailable: number;
-  stockTotal: number;
-} {
-  const stockCodes = normalizeStockCodes(product);
-  return {
-    stockAvailable: stockCodes.filter((slot) => slot.code.trim() && !slot.soldOrderId).length,
-    stockTotal: stockCodes.filter((slot) => slot.code.trim()).length,
   };
-}
-
-export function publicProduct(product: ProductRecord) {
-  const { stockCodes: _privateStockCodes, ...safeProduct } = product;
-  const counts = productStockCounts(product);
-  return {
-    ...safeProduct,
-    inStock: product.inStock && counts.stockAvailable > 0,
-    ...counts,
-  };
-}
-
-export type StoreTransactionState = {
-  products: ProductRecord[];
-  orders: OrderRecord[];
-};
-
-export async function transactStore<T>(
-  operation: (state: StoreTransactionState) => {
-    products?: ProductRecord[];
-    orders?: OrderRecord[];
-    result: T;
-  },
-): Promise<T> {
-  return enqueueWrite(async () => {
-    await ensureStoreFiles();
-    const [productsContent, ordersContent] = await Promise.all([
-      readFile(files.products, "utf8"),
-      readFile(files.orders, "utf8"),
-    ]);
-    const state = {
-      products: JSON.parse(productsContent) as ProductRecord[],
-      orders: JSON.parse(ordersContent) as OrderRecord[],
-    };
-    const change = operation(state);
-    for (const key of ["products", "orders"] as const) {
-      const value = change[key];
-      if (value === undefined) continue;
-      const destination = files[key];
-      const temp = `${destination}.${process.pid}.tmp`;
-      await writeFile(temp, `${JSON.stringify(value, null, 2)}\n`, "utf8");
-      await rename(temp, destination);
-    }
-    return change.result;
-  });
+  const next = writeQueue.then(run, run);
+  writeQueue = next.catch(() => undefined);
+  await next;
 }
 
 export async function saveImageData(

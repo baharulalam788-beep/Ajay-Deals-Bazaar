@@ -5,7 +5,6 @@ import {
   AdminLoginBody,
   AdminLoginResponse,
   AdminLogoutResponse,
-  ConfirmOrderBody,
   ConfirmOrderParams,
   ConfirmOrderResponse,
   DeliverSecondKeyBody,
@@ -13,6 +12,8 @@ import {
   DeliverSecondKeyResponse,
   GetAdminSessionResponse,
   ListOrdersResponse,
+  RejectOrderParams,
+  RejectOrderResponse,
   UpdateProductBody,
   UpdateProductParams,
   UpdateProductResponse,
@@ -194,16 +195,10 @@ router.put(
 router.post(
   "/admin/orders/:id/confirm",
   requireAdmin,
-  adminBodyParser,
   async (req, res): Promise<void> => {
     const params = ConfirmOrderParams.safeParse(req.params);
-    const body = ConfirmOrderBody.safeParse(req.body);
     if (!params.success) {
       res.status(400).json({ error: params.error.message });
-      return;
-    }
-    if (!body.success) {
-      res.status(400).json({ error: body.error.message });
       return;
     }
     const orders = await readJson<OrderRecord[]>("orders");
@@ -212,15 +207,42 @@ router.post(
       res.status(404).json({ error: "Order not found." });
       return;
     }
-    if (order.status !== "confirmed") {
-      orders[index] = {
-        ...order,
-        status: "confirmed",
-        firstKey: body.data.key.trim(),
-      };
+    if (order.status === "rejected") {
+      res.status(409).json({ error: "A rejected order cannot be confirmed." });
+      return;
+    }
+    if (order.status === "pending") {
+      orders[index] = { ...order, status: "confirmed" };
       await writeJson("orders", orders);
     }
     res.json(ConfirmOrderResponse.parse(orders[index]));
+  },
+);
+
+router.post(
+  "/admin/orders/:id/reject",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const params = RejectOrderParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+    const orders = await readJson<OrderRecord[]>("orders");
+    const { order, index } = orderById(orders, params.data.id);
+    if (!order) {
+      res.status(404).json({ error: "Order not found." });
+      return;
+    }
+    if (order.status === "confirmed") {
+      res.status(409).json({ error: "A confirmed order cannot be rejected." });
+      return;
+    }
+    if (order.status === "pending") {
+      orders[index] = { ...order, status: "rejected" };
+      await writeJson("orders", orders);
+    }
+    res.json(RejectOrderResponse.parse(orders[index]));
   },
 );
 

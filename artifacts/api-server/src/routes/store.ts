@@ -26,12 +26,26 @@ import { seedProductsIfEmpty } from "../lib/store-seed";
 const router: IRouter = Router();
 const orderBodyParser = express.json({ limit: "8mb" });
 
+function isSupportedDigitalProduct(product: ProductRecord): boolean {
+  const details = `${product.title} ${product.description} ${product.category}`.toLowerCase();
+  const isVoucherOrTopUp = /\btop[\s-]?up\b|\bvoucher\b|\bgift card\b/.test(details);
+  const mentionsAccountCredentials = /\baccount\b|\bpassword\b|\blogin\b|\brecovery\b|\botp\b|\bid\s*pass\b/.test(details);
+  return isVoucherOrTopUp && !mentionsAccountCredentials;
+}
+
+function storefrontProduct(product: ProductRecord): ProductRecord {
+  return {
+    ...product,
+    inStock: product.inStock && isSupportedDigitalProduct(product),
+  };
+}
+
 router.use("/uploads", express.static(STORE_UPLOADS_DIR, { fallthrough: true }));
 
 router.get("/store/products", async (_req, res): Promise<void> => {
   await seedProductsIfEmpty();
   const products = await readJson<ProductRecord[]>("products");
-  res.json(ListProductsResponse.parse(products));
+  res.json(ListProductsResponse.parse(products.map(storefrontProduct)));
 });
 
 router.get("/store/products/:id", async (req, res): Promise<void> => {
@@ -47,7 +61,7 @@ router.get("/store/products/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Product not found" });
     return;
   }
-  res.json(GetProductResponse.parse(product));
+  res.json(GetProductResponse.parse(storefrontProduct(product)));
 });
 
 router.get("/store/settings", async (_req, res): Promise<void> => {
@@ -66,6 +80,10 @@ router.post("/store/orders", orderBodyParser, async (req, res): Promise<void> =>
   const product = products.find((item) => item.id === body.data.productId);
   if (!product) {
     res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  if (!isSupportedDigitalProduct(product)) {
+    res.status(409).json({ error: "This store currently supports gaming top-up codes and e-vouchers only." });
     return;
   }
   if (!product.inStock) {

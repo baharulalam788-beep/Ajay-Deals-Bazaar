@@ -1109,31 +1109,16 @@ export const getConfirmOrderUrl = (id: string,) => {
 }
 
 /**
- * @summary Confirm payment and deliver first key
+ * @summary Mark an order as confirmed
  */
-export const confirmOrder = async (id: string,
-    keyInput: KeyInput, options?: Parameters<typeof customFetch>[1]): Promise<OrderStatus> => {
+export const confirmOrder = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<OrderStatus> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return customFetch<OrderStatus>(getConfirmOrderUrl(id),
+  return customFetch<OrderStatus>(getConfirmOrderUrl(id),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(keyInput)
+    method: 'POST'
+
+
   }
 );}
 
@@ -1158,9 +1143,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
       const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmOrder>>, ConfirmOrderMutationVariables> = (props) => {
-          const {id,data} = props ?? {};
+          const {id} = props ?? {};
 
-          return  confirmOrder(id,data,requestOptions)
+          return  confirmOrder(id,requestOptions)
         }
 
 
@@ -1171,12 +1156,12 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type ConfirmOrderMutationResult = NonNullable<Awaited<ReturnType<typeof confirmOrder>>>
-    export type ConfirmOrderMutationBody = BodyType<KeyInput>
+
     export type ConfirmOrderMutationError = ErrorType<unknown>
-    export type ConfirmOrderMutationVariables = {id: string;data: BodyType<KeyInput>}
+    export type ConfirmOrderMutationVariables = {id: string}
 
     /**
- * @summary Confirm payment and deliver first key
+ * @summary Mark an order as confirmed
  */
 export const useConfirmOrder = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmOrder>>, TError,ConfirmOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -1187,6 +1172,80 @@ export const useConfirmOrder = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getConfirmOrderMutationOptions(options));
+    }
+
+export const getRejectOrderUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/orders/${id}/reject`
+}
+
+/**
+ * @summary Reject a pending order
+ */
+export const rejectOrder = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<OrderStatus> => {
+
+  return customFetch<OrderStatus>(getRejectOrderUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRejectOrderMutationKey = () => ['rejectOrder'] as const;
+
+export const getRejectOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,RejectOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,RejectOrderMutationVariables, TContext> => {
+
+const mutationKey = getRejectOrderMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectOrder>>, RejectOrderMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectOrder(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectOrderMutationResult = NonNullable<Awaited<ReturnType<typeof rejectOrder>>>
+
+    export type RejectOrderMutationError = ErrorType<unknown>
+    export type RejectOrderMutationVariables = {id: string}
+
+    /**
+ * @summary Reject a pending order
+ */
+export const useRejectOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectOrder>>, TError,RejectOrderMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectOrder>>,
+        TError,
+        RejectOrderMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRejectOrderMutationOptions(options));
     }
 
 export const getDeliverSecondKeyUrl = (id: string,) => {

@@ -5,8 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   useHealthCheck, useListProducts, useGetProduct, useGetStoreSettings, useCreateOrder,
-  useGetOrderStatus, useRequestSecondKey, useAdminLogin, useAdminLogout, useGetAdminSession,
-  useListOrders, useUpdateProduct, useUpdateStoreSettings, useConfirmOrder, useDeliverSecondKey,
+  useGetOrderStatus, useAdminLogin, useAdminLogout, useGetAdminSession,
+  useListOrders, useUpdateProduct, useUpdateStoreSettings, useConfirmOrder, useRejectOrder,
   getListProductsQueryKey, getGetProductQueryKey, getGetStoreSettingsQueryKey,
   getGetAdminSessionQueryKey, getListOrdersQueryKey, getGetOrderStatusQueryKey,
 } from '@workspace/api-client-react';
@@ -16,7 +16,7 @@ import {
 } from 'wouter';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Check, CheckCircle2, ChevronRight, CircleHelp,
-  Clock3, Copy, Gamepad2, Headphones, ImagePlus, KeyRound, LockKeyhole, LogOut,
+  Clock3, Copy, ExternalLink, Gamepad2, Headphones, ImagePlus, LockKeyhole, LogOut,
   PackageCheck, RefreshCw, Search, ShieldCheck, ShoppingBag, Smartphone, Sparkles,
   Ticket, Upload, WalletCards, X,
 } from 'lucide-react';
@@ -28,6 +28,17 @@ const money = (n: number) => new Intl.NumberFormat('en-IN', { style: 'currency',
 const productColors = ['#24675f', '#3b4f75', '#b65b42', '#bf7b39', '#706c9c'];
 const glyphFor = (p: Product) => p.category.toLowerCase().includes('game') ? 'GG' : p.category.toLowerCase().includes('gift') ? 'GIFT' : p.category.slice(0, 4).toUpperCase();
 const errorMessage = (e: unknown) => e instanceof Error ? e.message : 'Something went wrong. Please try again.';
+const orderCacheKey = (id: string) => `ajay-order-${id}`;
+function readCachedOrder(id: string): OrderStatus | null {
+  try {
+    const cached = sessionStorage.getItem(orderCacheKey(id));
+    if (!cached) return null;
+    const order = JSON.parse(cached) as OrderStatus;
+    return order.id === id ? order : null;
+  } catch {
+    return null;
+  }
+}
 
 function Header() {
   const [, setLocation] = useLocation();
@@ -150,14 +161,23 @@ function CheckoutPage({ id }: { id: string }) {
     e.preventDefault(); setFormError('');
     if (!product) return;
     if (utr.length !== 12 || !/^\d{12}$/.test(utr)) { setFormError('Please enter the 12-digit UTR from your UPI receipt.'); return; }
-    createOrder.mutate({data:{productId:id,name:name.trim(),whatsapp:whatsapp.trim(),utr}}, {onSuccess: order => setLocation(`/status?id=${encodeURIComponent(order.id)}`), onError: e => setFormError(errorMessage(e))});
+    createOrder.mutate(
+      {data:{productId:id,name:name.trim(),whatsapp:whatsapp.trim(),utr}},
+      {
+        onSuccess: order => {
+          try { sessionStorage.setItem(orderCacheKey(order.id), JSON.stringify(order)); } catch {}
+          setLocation(`/order-success?id=${encodeURIComponent(order.id)}`);
+        },
+        onError: () => setFormError('We couldn’t save your order. Please check your connection and try again.'),
+      },
+    );
   };
   if (busy) return <PageShell><div className="shell py-12"><div className="skeleton h-[440px]" /></div></PageShell>;
   if (!product) return <PageShell><div className="shell py-20 text-center"><h2 className="display text-2xl">Product unavailable</h2><Link href="/" className="mt-4 inline-block underline" data-testid="link-checkout-back">Back to shop</Link></div></PageShell>;
   const copyUpi = async () => { if (!settings?.upiId) return; await navigator.clipboard?.writeText(settings.upiId); setCopied(true); window.setTimeout(()=>setCopied(false),1800); };
   return <PageShell><div className="shell max-w-[970px] py-8">
     <Link href={`/product/${product.id}`} className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#61716a] no-underline" data-testid="link-checkout-back-product"><ArrowLeft size={16}/> Back to product</Link>
-    <div className="mb-6"><span className="section-label">One last step</span><h1 className="display mt-2 text-3xl font-semibold tracking-[-.04em]">Pay securely with UPI</h1><p className="mt-1 text-sm text-[#738078]">We'll check your payment and keep you posted.</p><p className="mt-2 text-sm font-semibold text-[#16844b]" data-testid="text-payment-instructions-hi">QR scan karke pay karein, phir neeche 12-digit UTR number daalein.</p></div>
+     <div className="mb-6"><span className="section-label">One last step</span><h1 className="display mt-2 text-3xl font-semibold tracking-[-.04em]">Pay securely with UPI</h1><p className="mt-1 text-sm text-[#738078]">Submit your order details after paying. We’ll review the UTR manually; it is not checked by an external payment service.</p><p className="mt-2 text-sm font-semibold text-[#16844b]" data-testid="text-payment-instructions-hi">QR scan karke pay karein, phir neeche 12-digit UTR number daalein.</p></div>
     <div className="grid gap-5 md:grid-cols-[.85fr_1.15fr]">
       <aside className="space-y-4">
         <div className="panel p-4"><div className="flex gap-4"><div className="w-24 shrink-0"><ProductVisual product={product} /></div><div className="flex flex-col justify-center"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-[#76827b]">{product.category}</span><h2 className="display mt-1 text-lg font-semibold">{product.title}</h2><strong className="mt-2 text-xl">{money(product.price)}</strong></div></div><div className="mt-4 flex justify-between border-t border-[#ebe6dc] pt-3 text-sm"><span className="text-[#75817b]">Total to pay</span><strong>{money(product.price)}</strong></div></div>
@@ -176,44 +196,42 @@ function CheckoutPage({ id }: { id: string }) {
             <div className="mt-1 text-right text-[10px] text-[#75817b]" data-testid="text-utr-count">{utr.length}/12 digits</div>
           </div>
         </div>
-        {formError&&<div className="mt-4 rounded-lg bg-[#fde9e5] px-3 py-2.5 text-xs text-[#a64136]" role="alert" data-testid="status-checkout-error">{formError}</div>}
+        {formError&&<div className="mt-4 rounded-lg bg-[#fff4db] px-3 py-2.5 text-xs text-[#775a1c]" role="status" data-testid="status-checkout-error">{formError}</div>}
         <button type="submit" disabled={createOrder.isPending || !product.inStock} className="btn btn-primary mt-5 w-full !py-3.5" data-testid="button-submit-order">{createOrder.isPending?<><RefreshCw size={16} className="animate-spin"/> Placing your order…</>:<>I've paid — place my order <ArrowRight size={16}/></>}</button>
-        <p className="mt-3 text-center text-[10px] leading-5 text-[#859088]">By continuing, you confirm the UTR matches your payment receipt.</p>
+        <p className="mt-3 text-center text-[10px] leading-5 text-[#859088]">Your order is saved for manual payment review. No automatic UTR verification is performed.</p>
       </form>
     </div>
   </div></PageShell>;
 }
 function StatusPage({ id }: { id: string }) {
   const query = useGetOrderStatus(id, { query:{ refetchInterval: 10000, queryKey:getGetOrderStatusQueryKey(id), retry:false } });
-  const requestKey = useRequestSecondKey();
-  const [requested,setRequested] = useState(false);
+  const [cachedOrder,setCachedOrder] = useState<OrderStatus|null>(()=>readCachedOrder(id));
   const [time,setTime] = useState(new Date());
-  useEffect(() => { if (query.dataUpdatedAt) setTime(new Date(query.dataUpdatedAt)); }, [query.dataUpdatedAt]);
-  const qc = useQueryClient();
-  const order = query.data;
-  const askSecond = () => requestKey.mutate({id}, {onSuccess: async()=>{setRequested(true);await qc.invalidateQueries({queryKey:getGetOrderStatusQueryKey(id)});}, onError:()=>setRequested(false)});
-  if (query.isLoading) return <PageShell><div className="shell max-w-[720px] py-12"><div className="skeleton h-[450px]"/></div></PageShell>;
-  if (query.isError || !order) return <PageShell><div className="shell max-w-[680px] py-20 text-center"><div className="panel p-10"><CircleHelp className="mx-auto text-[#ca7154]" size={32}/><h1 className="display mt-4 text-2xl font-semibold">We can't find that order</h1><p className="mt-2 text-sm text-[#748078]">Check the link in your browser or return to the Bazaar.</p><Link href="/" className="btn btn-primary mt-5 no-underline" data-testid="link-status-home">Back to shop</Link></div></div></PageShell>;
+  useEffect(() => {
+    if (!query.data) return;
+    setCachedOrder(query.data);
+    setTime(new Date(query.data.createdAt));
+    try { sessionStorage.setItem(orderCacheKey(id), JSON.stringify(query.data)); } catch {}
+  }, [id,query.data]);
+  const order = query.data ?? cachedOrder;
+  if (query.isLoading && !order) return <PageShell><div className="shell max-w-[720px] py-12"><div className="skeleton h-[450px]"/></div></PageShell>;
+  if (!order) return <PageShell><div className="shell max-w-[680px] py-20 text-center"><div className="panel p-10"><CircleHelp className="mx-auto text-[#17675b]" size={32}/><h1 className="display mt-4 text-2xl font-semibold">We couldn’t load this order</h1><p className="mt-2 text-sm text-[#748078]">Check the order link or return to the Bazaar.</p><Link href="/" className="btn btn-primary mt-5 no-underline" data-testid="link-status-home">Back to shop</Link></div></div></PageShell>;
   const confirmed=order.status==='confirmed';
+  const rejected=order.status==='rejected';
   const refresh=async()=>{await query.refetch();setTime(new Date());};
   return <PageShell><div className="shell max-w-[790px] py-9">
     <div className="mb-5 flex items-center justify-between"><Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-[#61716a] no-underline" data-testid="link-status-home"><ArrowLeft size={16}/> Bazaar home</Link><button onClick={refresh} className="btn btn-outline !px-3 !py-2 text-xs" data-testid="button-refresh-status"><RefreshCw size={14} className={query.isFetching?'animate-spin':''}/> Refresh status</button></div>
-    <div className={`overflow-hidden rounded-[24px] p-6 sm:p-9 ${confirmed?'bg-[#deeee3]':'bg-[#fff0d5]'}`}>
-      <span className={`badge ${confirmed?'badge-green':'badge-amber'}`} data-testid="status-order"><span className={`h-2 w-2 rounded-full ${confirmed?'bg-[#308a65]':'bg-[#c99032]'}`}/>{confirmed?'Payment confirmed':'Payment under review'}</span>
-      <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div><h1 className="display text-3xl font-semibold tracking-[-.04em] sm:text-4xl">{confirmed?'Your order is ready.':'We’re checking your payment.'}</h1><p className="mt-2 max-w-lg text-sm leading-6 text-[#64736b]">{confirmed?'Your digital delivery is below. Keep this page handy.':'A real person is matching your UTR with the payment. This page checks for updates every 12 seconds.'}</p></div><div className="grid h-[70px] w-[70px] place-items-center rounded-2xl bg-white/70 text-[#17675b]">{confirmed?<PackageCheck size={34}/>:<Clock3 size={32}/>}</div></div>
+    <div className={`overflow-hidden rounded-[24px] p-6 sm:p-9 ${rejected?'bg-[#fff0d5]':'bg-[#deeee3]'}`}>
+      <span className={`badge ${rejected?'badge-amber':'badge-green'}`} data-testid="status-order"><span className={`h-2 w-2 rounded-full ${rejected?'bg-[#c99032]':'bg-[#308a65]'}`}/>{rejected?'Order rejected':confirmed?'Payment confirmed':'Payment verification in progress'}</span>
+      <div className="mt-5 grid gap-5 sm:grid-cols-[1fr_auto] sm:items-center"><div><h1 className="display text-3xl font-semibold tracking-[-.04em] sm:text-4xl">{rejected?'Order needs attention':confirmed?'Payment Confirmed!':'Order Received!'}</h1><p className="mt-2 max-w-lg text-sm leading-6 text-[#64736b]">{rejected?'We couldn’t confirm this payment. Please contact us before placing another order.':confirmed?'Your payment has been confirmed. We’ll contact you about your order on WhatsApp.':<>Payment Verification In Progress. Please wait — we will confirm your payment and contact you about your order on WhatsApp: <strong>{order.whatsapp}</strong></>}</p></div><div className="grid h-[70px] w-[70px] place-items-center rounded-2xl bg-white/70 text-[#17675b]">{rejected?<CircleHelp size={32}/>:confirmed?<PackageCheck size={34}/>:<Clock3 size={32}/>}</div></div>
       <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-t border-black/10 pt-4 text-xs text-[#596a62]"><span>Order <strong className="font-mono" data-testid="text-order-id">{order.id}</strong></span><span>Placed {new Date(order.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</span><span className="flex items-center gap-1"><RefreshCw size={12}/> Updated {time.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span></div>
     </div>
-    <div className="panel mt-5 p-5"><div className="flex items-center gap-4"><img src={order.productImageUrl || ''} alt="" className="h-[62px] w-[68px] rounded-xl bg-[#e7eee6] object-cover" data-testid="img-order-product"/><div className="min-w-0 flex-1"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-[#77837d]">Your order</span><h2 className="display mt-1 truncate text-lg font-semibold" data-testid="text-order-product">{order.productTitle}</h2></div><strong className="display text-xl">{money(order.amount)}</strong></div></div>
-    {confirmed&&<div className="mt-5 space-y-3">{order.firstKey&&<KeyCard title="Your first key" value={order.firstKey} testId="text-first-key"/>}
-      {order.secondKey&&<KeyCard title="Your second key" value={order.secondKey} testId="text-second-key"/>}
-      {!order.secondKey&&<div className="panel flex flex-col justify-between gap-4 p-5 sm:flex-row sm:items-center"><div><h3 className="display font-semibold">Need a second key?</h3><p className="mt-1 text-xs text-[#748078]">{order.secondKeyRequested?'Your request is in. We’ll add it here when ready.':'Request the second digital key for this order.'}</p></div><button disabled={order.secondKeyRequested||requested||requestKey.isPending} onClick={askSecond} className="btn btn-soft shrink-0" data-testid="button-request-second-key">{requestKey.isPending?<RefreshCw size={15} className="animate-spin"/>:<KeyRound size={15}/>} {order.secondKeyRequested||requested?'Request sent':'Request second key'}</button></div>}</div>}
-    <div className="mt-5 rounded-2xl bg-[#f1ede3] p-5"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-[#17675b]"/><strong className="display text-sm">What happens next</strong></div><div className="mt-4 grid gap-4 sm:grid-cols-3">{[{n:'01',t:'Payment',d:'We verify your 12-digit UTR.'},{n:'02',t:'Confirmation',d:'Your order status changes here.'},{n:'03',t:'Delivery',d:'Your key appears on this page.'}].map((s,i)=><div key={s.n} className="flex gap-3"><span className={`display text-xs font-bold ${confirmed||i===0?'text-[#17675b]':'text-[#a0a8a2]'}`}>{s.n}</span><span><strong className="block text-xs">{s.t}</strong><small className="mt-1 block text-[11px] leading-4 text-[#75817b]">{s.d}</small></span></div>)}</div></div>
+    <div className="panel mt-5 p-5">
+      <div className="flex items-center gap-4"><img src={order.productImageUrl || ''} alt="" className="h-[62px] w-[68px] rounded-xl bg-[#e7eee6] object-cover" data-testid="img-order-product"/><div className="min-w-0 flex-1"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-[#77837d]">Your order</span><h2 className="display mt-1 truncate text-lg font-semibold" data-testid="text-order-product">{order.productTitle}</h2></div><strong className="display text-xl">{money(order.amount)}</strong></div>
+      <div className="mt-4 grid gap-3 border-t border-[#ebe6dc] pt-4 text-sm sm:grid-cols-2"><div><small className="text-[#75817b]">WhatsApp number</small><strong className="mt-1 block" data-testid="text-order-whatsapp">{order.whatsapp}</strong></div><div><small className="text-[#75817b]">UTR number</small><strong className="mt-1 block font-mono tracking-wider" data-testid="text-order-utr">{order.utr}</strong></div></div>
+    </div>
+    <div className="mt-5 rounded-2xl bg-[#f1ede3] p-5"><div className="flex items-center gap-2"><ShieldCheck size={17} className="text-[#17675b]"/><strong className="display text-sm">What happens next</strong></div><div className="mt-4 grid gap-4 sm:grid-cols-3">{[{n:'01',t:'Order received',d:'Your details and UTR are saved.'},{n:'02',t:'Manual review',d:'We review the payment details; no external UTR check runs.'},{n:'03',t:'WhatsApp contact',d:'We’ll contact you about your order.'}].map((s,i)=><div key={s.n} className="flex gap-3"><span className={`display text-xs font-bold ${confirmed||i===0?'text-[#17675b]':'text-[#a0a8a2]'}`}>{s.n}</span><span><strong className="block text-xs">{s.t}</strong><small className="mt-1 block text-[11px] leading-4 text-[#75817b]">{s.d}</small></span></div>)}</div></div>
   </div></PageShell>;
-}
-function KeyCard({title,value,testId}:{title:string;value:string;testId:string}) {
-  const [copied,setCopied]=useState(false);
-  const copy=async()=>{await navigator.clipboard?.writeText(value);setCopied(true);window.setTimeout(()=>setCopied(false),1800);};
-  return <div className="rounded-2xl border border-[#b8d4c1] bg-[#eaf4ed] p-5"><div className="flex items-center justify-between"><span className="flex items-center gap-2 text-sm font-bold text-[#17675b]"><CheckCircle2 size={17}/>{title}</span><button onClick={copy} className="btn btn-soft !px-3 !py-2 text-xs" data-testid={`button-copy-${testId}`}>{copied?<Check size={14}/>:<Copy size={14}/>} {copied?'Copied':'Copy key'}</button></div><div className="mt-3 break-all rounded-xl border border-[#c7ddcd] bg-white px-4 py-3 font-mono text-sm tracking-wide" data-testid={testId}>{value}</div></div>;
 }
 function AdminLogin() {
   const login=useAdminLogin({request:{credentials:'same-origin'}}); const qc=useQueryClient();
@@ -243,7 +261,7 @@ function AdminPanel() {
   const [form,setForm]=useState({title:'',description:'',price:'',originalPrice:'',category:'',inStock:true,imageData:''});
   const [upiId,setUpiId]=useState(''); const [qrImageData,setQrImageData]=useState(''); const [notice,setNotice]=useState('');
   const authenticated=!!session.data?.authenticated;
-  const updateProduct=useUpdateProduct({request:{credentials:'same-origin'}}); const updateSettings=useUpdateStoreSettings({request:{credentials:'same-origin'}}); const confirm=useConfirmOrder({request:{credentials:'same-origin'}}); const deliver=useDeliverSecondKey({request:{credentials:'same-origin'}});
+   const updateProduct=useUpdateProduct({request:{credentials:'same-origin'}}); const updateSettings=useUpdateStoreSettings({request:{credentials:'same-origin'}}); const confirm=useConfirmOrder({request:{credentials:'same-origin'}}); const reject=useRejectOrder({request:{credentials:'same-origin'}});
   const setProductForm=(p:Product)=>{setEditId(p.id);setForm({title:p.title,description:p.description,price:String(p.price),originalPrice:String(p.originalPrice),category:p.category,inStock:p.inStock,imageData:''});setNotice('');};
   const saveProduct=(e:React.FormEvent)=>{e.preventDefault();if(!editId)return;updateProduct.mutate({id:editId,data:{...form,price:Number(form.price),originalPrice:Number(form.originalPrice),imageData:form.imageData||''}},{onSuccess:async()=>{setNotice('Product saved.');await qc.invalidateQueries({queryKey:getListProductsQueryKey()});await qc.invalidateQueries({queryKey:getGetProductQueryKey(editId)});},onError:e=>setNotice(errorMessage(e))});};
   const saveSettings=(e:React.FormEvent)=>{e.preventDefault();updateSettings.mutate({data:{upiId, ...(qrImageData?{qrImageData}:{})}},{onSuccess:async()=>{setNotice('Payment settings saved.');await qc.invalidateQueries({queryKey:getGetStoreSettingsQueryKey()});},onError:e=>setNotice(errorMessage(e))});};
@@ -251,17 +269,15 @@ function AdminPanel() {
   if(session.isLoading)return <div className="shell py-12"><div className="skeleton mx-auto h-[380px] max-w-[450px]"/></div>;
   if(!authenticated)return <AdminLogin/>;
   const allOrders=ordersQuery.data??[];
-  const secondKeyAlerts=allOrders.filter(order=>order.secondKeyRequested&&!order.secondKey);
   return <div className="shell py-8">
     <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><span className="section-label">Back office</span><h1 className="display mt-2 text-3xl font-semibold tracking-[-.04em]">Good morning, Ajay.</h1><p className="mt-1 text-sm text-[#75817b]">A clear view of the Bazaar, all in one place.</p></div><button className="btn btn-outline self-start !px-3 !py-2 text-xs sm:self-auto" onClick={()=>logout.mutate(undefined,{onSuccess:()=>qc.invalidateQueries({queryKey:getGetAdminSessionQueryKey()})})} disabled={logout.isPending} data-testid="button-admin-logout"><LogOut size={14}/> Sign out</button></div>
     {notice&&<div className="mb-4 rounded-xl bg-[#e8f2ec] px-4 py-3 text-sm text-[#17675b]" role="status" data-testid="status-admin-notice">{notice}<button className="float-right" onClick={()=>setNotice('')} aria-label="Dismiss notice"><X size={15}/></button></div>}
     <div className="mb-5 flex gap-2 overflow-x-auto border-b border-[#ded9ce]">{[{id:'orders',name:'Orders',icon:<PackageCheck size={15}/>},{id:'products',name:'Products',icon:<ShoppingBag size={15}/>},{id:'settings',name:'Payment settings',icon:<WalletCards size={15}/>}].map(t=><button key={t.id} onClick={()=>setTab(t.id as typeof tab)} className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-bold ${tab===t.id?'border-[#17675b] text-[#17675b]':'border-transparent text-[#77837d]'}`} data-testid={`button-admin-tab-${t.id}`}>{t.icon}{t.name}{t.id==='orders'&&<span className="rounded-full bg-[#eee9df] px-2 py-0.5 text-[10px]">{allOrders.filter(o=>o.status==='pending').length}</span>}</button>)}</div>
     {tab==='orders'&&<section>
-      {secondKeyAlerts.length>0&&<div className="mb-4 flex items-center gap-3 rounded-xl border border-[#f1d28b] bg-[#fff6df] px-4 py-3 text-sm font-semibold text-[#76561a]" role="alert" data-testid="alert-second-key-request"><KeyRound size={17}/>{secondKeyAlerts.length===1?'A customer needs their second key':`${secondKeyAlerts.length} customers need their second key`}<span className="ml-auto text-xs font-medium">Open the matching order below</span></div>}
       {ordersQuery.isLoading?<div className="space-y-3">{[1,2,3].map(i=><div className="skeleton h-28" key={i}/>)}</div>:
       ordersQuery.isError?<div className="panel p-8 text-center" data-testid="state-admin-orders-error"><p className="text-sm">Orders couldn't load.</p><button onClick={()=>ordersQuery.refetch()} className="btn btn-primary mt-3" data-testid="button-retry-orders"><RefreshCw size={14}/> Retry</button></div>:
       allOrders.length===0?<div className="panel flex flex-col items-center p-12 text-center" data-testid="state-admin-orders-empty"><span className="grid h-14 w-14 place-items-center rounded-2xl bg-[#e8f2ec] text-[#17675b]"><PackageCheck/></span><h2 className="display mt-4 text-xl font-semibold">No orders just yet</h2><p className="mt-1 text-sm text-[#75817b]">New customer orders will appear here.</p></div>:
-      <div className="space-y-3">{allOrders.map(o=><AdminOrder key={o.id} order={o} onConfirm={(key)=>confirm.mutate({id:o.id,data:{key}},{onSuccess:async()=>{setNotice('Order confirmed and key delivered.');await qc.invalidateQueries({queryKey:getListOrdersQueryKey()});await qc.invalidateQueries({queryKey:getGetOrderStatusQueryKey(o.id)});},onError:e=>setNotice(errorMessage(e))})} onSecond={(key)=>deliver.mutate({id:o.id,data:{key}},{onSuccess:async()=>{setNotice('Second key delivered.');await qc.invalidateQueries({queryKey:getListOrdersQueryKey()});await qc.invalidateQueries({queryKey:getGetOrderStatusQueryKey(o.id)});},onError:e=>setNotice(errorMessage(e))})} confirming={confirm.isPending} delivering={deliver.isPending}/>)}</div>}
+       <div className="space-y-3">{allOrders.map(o=><AdminOrder key={o.id} order={o} onConfirm={()=>confirm.mutate({id:o.id},{onSuccess:async()=>{setNotice('Order confirmed.');await qc.invalidateQueries({queryKey:getListOrdersQueryKey()});await qc.invalidateQueries({queryKey:getGetOrderStatusQueryKey(o.id)});},onError:e=>setNotice(errorMessage(e))})} onReject={()=>reject.mutate({id:o.id},{onSuccess:async()=>{setNotice('Order rejected.');await qc.invalidateQueries({queryKey:getListOrdersQueryKey()});await qc.invalidateQueries({queryKey:getGetOrderStatusQueryKey(o.id)});},onError:e=>setNotice(errorMessage(e))})} confirming={confirm.isPending} rejecting={reject.isPending}/>)}</div>}
       <div className="mt-4 text-right text-[11px] text-[#829089]" data-testid="text-admin-polling">Order list refreshes every 15 seconds</div>
     </section>}
     {tab==='products'&&<section className="grid gap-5 lg:grid-cols-[.75fr_1.25fr]">
@@ -295,13 +311,20 @@ function AdminPanel() {
     </div>}
   </div>;
 }
-function AdminOrder({order,onConfirm,onSecond,confirming,delivering}:{order:OrderStatus;onConfirm:(key:string)=>void;onSecond:(key:string)=>void;confirming:boolean;delivering:boolean}) {
-  const [key,setKey]=useState(''); const [second,setSecond]=useState('');
+function AdminOrder({order,onConfirm,onReject,confirming,rejecting}:{order:OrderStatus;onConfirm:()=>void;onReject:()=>void;confirming:boolean;rejecting:boolean}) {
+  const digits=order.whatsapp.replace(/\D/g,'');
+  const whatsAppUrl=digits?`https://wa.me/${digits}?text=${encodeURIComponent(`Hi ${order.name}, we’re contacting you about your ${order.productTitle} order (${order.id}).`)}`:null;
+  const badge=order.status==='confirmed'?'badge-green':order.status==='rejected'?'badge-red':'badge-amber';
   return <article className="panel p-4 sm:p-5" data-testid={`card-admin-order-${order.id}`}>
-    <div className="flex flex-wrap items-start justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><img src={order.productImageUrl||''} alt="" className="h-14 w-16 rounded-xl bg-[#e8f0e9] object-cover" data-testid={`img-admin-order-${order.id}`}/><div className="min-w-0"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-[#78847d]">{order.id}</span><h3 className="display truncate text-base font-semibold">{order.productTitle}</h3><small className="text-xs text-[#75817b]">{new Date(order.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</small></div></div><span className={`badge ${order.status==='confirmed'?'badge-green':'badge-amber'}`} data-testid={`status-admin-order-${order.id}`}>{order.status==='confirmed'?'Confirmed':'Pending review'}</span></div>
-    <div className="mt-4 grid gap-3 rounded-xl bg-[#f5f2eb] p-3 text-xs sm:grid-cols-4"><div><small className="text-[#87918b]">Buyer</small><strong className="mt-1 block" data-testid={`text-order-name-${order.id}`}>{order.name}</strong></div><div><small className="text-[#87918b]">WhatsApp</small><strong className="mt-1 block">{order.whatsapp}</strong></div><div><small className="text-[#87918b]">Amount</small><strong className="mt-1 block">{money(order.amount)}</strong></div><div><small className="text-[#87918b]">UTR</small><strong className="mt-1 block font-mono tracking-wider" data-testid={`text-order-utr-${order.id}`}>{order.utr}</strong></div></div>
-    {order.status==='pending'?<form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={e=>{e.preventDefault();if(key.trim())onConfirm(key.trim());}}><input className="field min-w-0 flex-1 font-mono text-sm" value={key} onChange={e=>setKey(e.target.value)} placeholder="Enter first digital key" required maxLength={500} data-testid={`input-first-key-${order.id}`}/><button disabled={confirming} className="btn btn-primary shrink-0" data-testid={`button-confirm-order-${order.id}`}>{confirming?<RefreshCw size={14} className="animate-spin"/>:<CheckCircle2 size={15}/>} Confirm & deliver</button></form>:
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"><span className="inline-flex items-center gap-2 text-xs font-semibold text-[#17675b]"><CheckCircle2 size={15}/> First key delivered</span>{order.secondKey?<span className="text-xs text-[#66736c]">Second key delivered</span>:order.secondKeyRequested?<form className="flex min-w-0 flex-1 gap-2" onSubmit={e=>{e.preventDefault();if(second.trim())onSecond(second.trim());}}><input className="field min-w-0 font-mono text-sm" value={second} onChange={e=>setSecond(e.target.value)} placeholder="Second key requested" required maxLength={500} data-testid={`input-second-key-${order.id}`}/><button disabled={delivering} className="btn btn-soft shrink-0" data-testid={`button-deliver-second-key-${order.id}`}>{delivering?'Sending…':'Send key'}</button></form>:<span className="text-xs text-[#89938d]">No second key requested</span>}</div>}
+    <div className="flex flex-wrap items-start justify-between gap-4"><div className="flex min-w-0 items-center gap-3"><img src={order.productImageUrl||''} alt="" className="h-14 w-16 rounded-xl bg-[#e8f0e9] object-cover" data-testid={`img-admin-order-${order.id}`}/><div className="min-w-0"><span className="text-[10px] font-bold uppercase tracking-[.12em] text-[#78847d]">{order.id}</span><h3 className="display truncate text-base font-semibold">{order.productTitle}</h3></div></div><span className={`badge ${badge}`} data-testid={`status-admin-order-${order.id}`}>{order.status==='confirmed'?'Confirmed':order.status==='rejected'?'Rejected':'Pending review'}</span></div>
+    <div className="mt-4 grid gap-3 rounded-xl bg-[#f5f2eb] p-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+      <div><small className="text-[#87918b]">Customer name</small><strong className="mt-1 block" data-testid={`text-order-name-${order.id}`}>{order.name}</strong></div>
+      <div><small className="text-[#87918b]">WhatsApp number</small>{whatsAppUrl?<a className="mt-1 inline-flex items-center gap-1 font-semibold text-[#087f49] underline" href={whatsAppUrl} target="_blank" rel="noopener noreferrer" data-testid={`link-order-whatsapp-${order.id}`}>{order.whatsapp}<ExternalLink size={12}/></a>:<strong className="mt-1 block">{order.whatsapp}</strong>}</div>
+      <div><small className="text-[#87918b]">UTR number</small><strong className="mt-1 block font-mono tracking-wider" data-testid={`text-order-utr-${order.id}`}>{order.utr}</strong></div>
+      <div><small className="text-[#87918b]">Time</small><strong className="mt-1 block">{new Date(order.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</strong></div>
+      <div><small className="text-[#87918b]">Amount</small><strong className="mt-1 block">{money(order.amount)}</strong></div>
+    </div>
+    {order.status==='pending'&&<div className="mt-4 flex flex-wrap gap-2"><button disabled={confirming||rejecting} onClick={onConfirm} className="btn btn-primary" data-testid={`button-confirm-order-${order.id}`}>{confirming?<RefreshCw size={14} className="animate-spin"/>:<CheckCircle2 size={15}/>} Confirm</button><button disabled={confirming||rejecting} onClick={onReject} className="btn btn-outline !border-[#e4c9c4] !text-[#a64136]" data-testid={`button-reject-order-${order.id}`}>{rejecting?<RefreshCw size={14} className="animate-spin"/>:<X size={15}/>} Reject</button></div>}
   </article>;
 }
 function NotFound() { return <PageShell><div className="shell py-24 text-center"><span className="section-label">404 · Wrong aisle</span><h1 className="display mt-3 text-4xl font-semibold">This page isn't on our shelf.</h1><Link href="/" className="btn btn-primary mt-6 no-underline" data-testid="link-notfound-home">Take me home <ArrowRight size={16}/></Link></div></PageShell>; }
@@ -310,13 +333,16 @@ function RouteViews() {
   const [checkoutMatch,checkoutParams]=useRoute('/checkout/:id');
   const [statusMatch,statusParams]=useRoute('/status/:id');
   const [statusQueryMatch]=useRoute('/status');
+  const [successQueryMatch]=useRoute('/order-success');
   const statusQueryId=new URLSearchParams(window.location.search).get('id');
+  const successOrderId=new URLSearchParams(window.location.search).get('id');
   return <Switch>
     <Route path="/"><Storefront/></Route>
     <Route path="/product/:id">{productMatch&&productParams?.id?<ProductPage id={productParams.id}/>:<NotFound/>}</Route>
     <Route path="/checkout/:id">{checkoutMatch&&checkoutParams?.id?<CheckoutPage id={checkoutParams.id}/>:<NotFound/>}</Route>
-    <Route path="/status/:id">{statusMatch&&statusParams?.id?<StatusPage id={statusParams.id}/>:<NotFound/>}</Route>
-    <Route path="/status">{statusQueryMatch&&statusQueryId?<StatusPage id={statusQueryId}/>:<NotFound/>}</Route>
+    <Route path="/status/:id">{statusMatch&&statusParams?.id?<StatusPage key={statusParams.id} id={statusParams.id}/>:<NotFound/>}</Route>
+    <Route path="/status">{statusQueryMatch&&statusQueryId?<StatusPage key={statusQueryId} id={statusQueryId}/>:<NotFound/>}</Route>
+    <Route path="/order-success">{successQueryMatch&&successOrderId?<StatusPage key={successOrderId} id={successOrderId}/>:<NotFound/>}</Route>
     <Route path="/admin"><PageShell><AdminPanel/></PageShell></Route>
     <Route component={NotFound}/>
   </Switch>;

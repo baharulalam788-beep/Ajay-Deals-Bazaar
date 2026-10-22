@@ -53,6 +53,7 @@ export type OrderStatusStatus = typeof OrderStatusStatus[keyof typeof OrderStatu
 export const OrderStatusStatus = {
   pending: 'pending',
   confirmed: 'confirmed',
+  rejected: 'rejected',
 } as const;
 
 export interface OrderStatus {

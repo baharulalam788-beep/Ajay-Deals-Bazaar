@@ -189,20 +189,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/OrderStatus"
-  /admin/products:
-    get:
-      operationId: listAdminProducts
-      tags: [admin]
-      summary: List products with private digital-code inventory
-      responses:
-        "200":
-          description: Products and their five inventory slots
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AdminProduct"
   /admin/products/{id}:
     patch:
       operationId: updateProduct
@@ -248,7 +234,7 @@ paths:
     post:
       operationId: confirmOrder
       tags: [admin]
-      summary: Confirm payment and deliver the next available digital code
+      summary: Mark an order as confirmed
       parameters:
         - name: id
           in: path
@@ -257,6 +243,23 @@ paths:
       responses:
         "200":
           description: Confirmed order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatus"
+  /admin/orders/{id}/reject:
+    post:
+      operationId: rejectOrder
+      tags: [admin]
+      summary: Reject a pending order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Rejected order
           content:
             application/json:
               schema:
@@ -295,7 +298,7 @@ components:
         - status
     Product:
       type: object
-      required: [id, title, description, price, originalPrice, imageUrl, category, inStock, stockAvailable, stockTotal]
+      required: [id, title, description, price, originalPrice, imageUrl, category, inStock]
       properties:
         id: { type: string }
         title: { type: string }
@@ -305,33 +308,6 @@ components:
         imageUrl: { type: string }
         category: { type: string }
         inStock: { type: boolean }
-        stockAvailable: { type: integer, minimum: 0, maximum: 5 }
-        stockTotal: { type: integer, minimum: 0, maximum: 5 }
-    AdminStockSlot:
-      type: object
-      required: [code, sold]
-      properties:
-        code: { type: string, maxLength: 500 }
-        sold: { type: boolean }
-    AdminProduct:
-      type: object
-      required: [id, title, description, price, originalPrice, imageUrl, category, inStock, stockAvailable, stockTotal, stockCodes]
-      properties:
-        id: { type: string }
-        title: { type: string }
-        description: { type: string }
-        price: { type: number }
-        originalPrice: { type: number }
-        imageUrl: { type: string }
-        category: { type: string }
-        inStock: { type: boolean }
-        stockAvailable: { type: integer, minimum: 0, maximum: 5 }
-        stockTotal: { type: integer, minimum: 0, maximum: 5 }
-        stockCodes:
-          type: array
-          maxItems: 5
-          items:
-            $ref: "#/components/schemas/AdminStockSlot"
     StoreSettings:
       type: object
       required: [upiId, qrImageUrl]
@@ -366,7 +342,7 @@ components:
         name: { type: string }
         whatsapp: { type: string }
         utr: { type: string }
-        status: { type: string, enum: [pending, confirmed] }
+        status: { type: string, enum: [pending, confirmed, rejected] }
         createdAt: { type: string }
         firstKey: { type: ["string", "null"] }
         secondKey: { type: ["string", "null"] }
@@ -384,7 +360,7 @@ components:
         authenticated: { type: boolean }
     ProductUpdate:
       type: object
-      required: [title, description, price, originalPrice, imageData, category, inStock, stockCodes]
+      required: [title, description, price, originalPrice, imageData, category, inStock]
       properties:
         title: { type: string }
         description: { type: string }
@@ -393,11 +369,6 @@ components:
         imageData: { type: string, maxLength: 7000000 }
         category: { type: string }
         inStock: { type: boolean }
-        stockCodes:
-          type: array
-          minItems: 5
-          maxItems: 5
-          items: { type: string, maxLength: 500 }
     KeyInput:
       type: object
       required: [key]

@@ -89,7 +89,7 @@ export const CreateOrderResponse = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
@@ -113,7 +113,7 @@ export const GetOrderStatusResponse = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
@@ -137,7 +137,7 @@ export const RequestSecondKeyResponse = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
@@ -186,7 +186,7 @@ export const ListOrdersResponseItem = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
@@ -247,18 +247,10 @@ export const UpdateStoreSettingsResponse = zod.object({
 
 
 /**
- * @summary Confirm payment and deliver first key
+ * @summary Mark an order as confirmed
  */
 export const ConfirmOrderParams = zod.object({
   "id": zod.coerce.string()
-})
-
-export const confirmOrderBodyKeyMax = 500;
-
-
-
-export const ConfirmOrderBody = zod.object({
-  "key": zod.string().min(1).max(confirmOrderBodyKeyMax)
 })
 
 export const ConfirmOrderResponse = zod.object({
@@ -270,7 +262,31 @@ export const ConfirmOrderResponse = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
+  "createdAt": zod.string(),
+  "firstKey": zod.string().nullish(),
+  "secondKey": zod.string().nullish(),
+  "secondKeyRequested": zod.boolean()
+})
+
+
+/**
+ * @summary Reject a pending order
+ */
+export const RejectOrderParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RejectOrderResponse = zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "productTitle": zod.string(),
+  "productImageUrl": zod.string(),
+  "amount": zod.number(),
+  "name": zod.string(),
+  "whatsapp": zod.string(),
+  "utr": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
@@ -302,7 +318,7 @@ export const DeliverSecondKeyResponse = zod.object({
   "name": zod.string(),
   "whatsapp": zod.string(),
   "utr": zod.string(),
-  "status": zod.enum(['pending', 'confirmed']),
+  "status": zod.enum(['pending', 'confirmed', 'rejected']),
   "createdAt": zod.string(),
   "firstKey": zod.string().nullish(),
   "secondKey": zod.string().nullish(),
