@@ -198,7 +198,10 @@ router.patch(
       originalPrice: body.data.originalPrice,
       images: body.data.images,
       category: body.data.category.trim(),
-      inStock: body.data.inStock,
+      stock: 100,
+      inStock: true,
+      quantity: 100,
+      isOutOfStock: false,
     };
     products[index] = updated;
     await writeJson("products", products);

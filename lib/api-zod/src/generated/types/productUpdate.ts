@@ -17,5 +17,4 @@ export interface ProductUpdate {
      */
   images: string[];
   category: string;
-  inStock: boolean;
 }

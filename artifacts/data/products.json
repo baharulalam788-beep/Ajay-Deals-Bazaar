@@ -7,6 +7,9 @@
     "originalPrice": 99,
     "imageUrl": "/api/uploads/free-fire-100.svg",
     "category": "Gaming top-up",
+    "stock": 100,
+    "quantity": 100,
+    "isOutOfStock": false,
     "inStock": true
   },
   {
@@ -17,6 +20,9 @@
     "originalPrice": 499,
     "imageUrl": "/api/uploads/free-fire-520.svg",
     "category": "Gaming top-up",
+    "stock": 100,
+    "quantity": 100,
+    "isOutOfStock": false,
     "inStock": true
   },
   {
@@ -27,6 +33,9 @@
     "originalPrice": 599,
     "imageUrl": "/api/uploads/bgmi-uc.svg",
     "category": "Gaming top-up",
+    "stock": 100,
+    "quantity": 100,
+    "isOutOfStock": false,
     "inStock": true
   },
   {
@@ -37,6 +46,9 @@
     "originalPrice": 300,
     "imageUrl": "/api/uploads/google-play.svg",
     "category": "E-voucher",
+    "stock": 100,
+    "quantity": 100,
+    "isOutOfStock": false,
     "inStock": true
   },
   {
@@ -47,6 +59,9 @@
     "originalPrice": 1199,
     "imageUrl": "/api/uploads/playstation.svg",
     "category": "E-voucher",
+    "stock": 100,
+    "quantity": 100,
+    "isOutOfStock": false,
     "inStock": true
   }
 ]

@@ -21,7 +21,12 @@ export interface Product {
      */
   images: string[];
   category: string;
+  /** @minimum 0 */
+  stock: number;
   inStock: boolean;
+  /** @minimum 0 */
+  quantity: number;
+  isOutOfStock: boolean;
 }
 
 export interface ProductImageUploadInput {
@@ -107,7 +112,6 @@ export interface ProductUpdate {
      */
   images: string[];
   category: string;
-  inStock: boolean;
 }
 
 export interface KeyInput {

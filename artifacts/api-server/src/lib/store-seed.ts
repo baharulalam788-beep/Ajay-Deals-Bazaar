@@ -9,7 +9,10 @@ const productSeeds: ProductRecord[] = [
     originalPrice: 99,
     images: ["/api/uploads/free-fire-100.svg"],
     category: "Gaming top-up",
+    stock: 100,
     inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   },
   {
     id: "free-fire-520",
@@ -19,7 +22,10 @@ const productSeeds: ProductRecord[] = [
     originalPrice: 499,
     images: ["/api/uploads/free-fire-520.svg"],
     category: "Gaming top-up",
+    stock: 100,
     inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   },
   {
     id: "bgmi-uc",
@@ -29,7 +35,10 @@ const productSeeds: ProductRecord[] = [
     originalPrice: 599,
     images: ["/api/uploads/bgmi-uc.svg"],
     category: "Gaming top-up",
+    stock: 100,
     inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   },
   {
     id: "google-play",
@@ -39,7 +48,10 @@ const productSeeds: ProductRecord[] = [
     originalPrice: 300,
     images: ["/api/uploads/google-play.svg"],
     category: "E-voucher",
+    stock: 100,
     inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   },
   {
     id: "playstation",
@@ -49,7 +61,10 @@ const productSeeds: ProductRecord[] = [
     originalPrice: 1199,
     images: ["/api/uploads/playstation.svg"],
     category: "E-voucher",
+    stock: 100,
     inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   },
 ];
 

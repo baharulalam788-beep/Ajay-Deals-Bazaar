@@ -6,7 +6,10 @@
     "price": 999,
     "originalPrice": 999,
     "category": "Gaming",
+    "stock": 100,
     "inStock": true,
+    "quantity": 100,
+    "isOutOfStock": false,
     "images": [
       "/api/uploads/product-1792583160317-abb9ce8d-5b43-48ba-be78-ec203da6d28e.jpg",
       "/api/uploads/product-1792646771910-56fe3ab0-4cbc-41fb-9039-56ff454f7730.jpg",
@@ -31,7 +34,10 @@
     "price": 1999,
     "originalPrice": 1999,
     "category": "Gaming",
+    "stock": 100,
     "inStock": true,
+    "quantity": 100,
+    "isOutOfStock": false,
     "images": [
       "/api/uploads/product-1792583293257-e6b2b44b-5b44-4191-b57c-6f3d85d2df83.jpg"
     ]
@@ -43,7 +49,10 @@
     "price": 799,
     "originalPrice": 999,
     "category": "Gaming",
+    "stock": 100,
     "inStock": true,
+    "quantity": 100,
+    "isOutOfStock": false,
     "images": [
       "/api/uploads/product-1792584071773-99afe6cd-817c-4610-b42d-194b398f3804.jpg"
     ]
@@ -55,7 +64,10 @@
     "price": 1299,
     "originalPrice": 1499,
     "category": "Gaming",
+    "stock": 100,
     "inStock": true,
+    "quantity": 100,
+    "isOutOfStock": false,
     "images": [
       "/api/uploads/product-1792584165327-a94f9e55-e6b3-4471-b813-3d8cfa397ad3.jpg",
       "/api/uploads/product-1792584230525-7085620f-4f4f-4925-b347-48394f2df59c.jpg"
@@ -68,7 +80,10 @@
     "price": 499,
     "originalPrice": 729,
     "category": "Gaming",
+    "stock": 100,
     "inStock": true,
+    "quantity": 100,
+    "isOutOfStock": false,
     "images": [
       "/api/uploads/product-1792584230525-7085620f-4f4f-4925-b347-48394f2df59c.jpg"
     ]

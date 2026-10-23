@@ -92,12 +92,12 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
     <Link href={`/product/${product.id}`} className="text-inherit no-underline" data-testid={`link-product-${product.id}`}>
       <ProductVisual product={product} index={index} />
       <div className="px-2 pb-2 pt-4">
-        <div className="mb-2 flex items-center justify-between gap-2"><span className="truncate text-[10px] font-bold uppercase tracking-[.12em] text-[#77837d]">{product.category}</span>{product.inStock ? <span className="badge badge-green !px-2 !py-1"><span className="h-1.5 w-1.5 rounded-full bg-[#27946b]" /> In stock</span> : <span className="badge badge-red !px-2 !py-1">Out of stock</span>}</div>
+        <div className="mb-2 flex items-center justify-between gap-2"><span className="truncate text-[10px] font-bold uppercase tracking-[.12em] text-[#77837d]">{product.category}</span><span className="badge badge-green !px-2 !py-1"><span className="h-1.5 w-1.5 rounded-full bg-[#27946b]" /> In stock</span></div>
         <h3 className="display min-h-[48px] text-[17px] font-semibold leading-snug">{product.title}</h3>
         <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1"><strong className="display text-[21px]">{money(product.price)}</strong>{product.originalPrice > product.price&&<del className="text-xs text-[#8b918d]">{money(product.originalPrice)}</del>}{discount>0&&<span className="text-[10px] font-bold text-[#16844b]">{discount}% off</span>}</div>
       </div>
     </Link>
-    <Link href={product.inStock?`/checkout/${product.id}`:`/product/${product.id}`} aria-disabled={!product.inStock} className={`btn btn-primary mt-auto w-full !py-2.5 text-xs no-underline ${!product.inStock?'pointer-events-none opacity-50':''}`} data-testid={`button-buy-product-${product.id}`}>Buy now <ArrowRight size={15}/></Link>
+    <Link href={`/checkout/${product.id}`} className="btn btn-primary mt-auto w-full !py-2.5 text-xs no-underline" data-testid={`button-buy-product-${product.id}`}>Buy now <ArrowRight size={15}/></Link>
   </article>;
 }
 function Storefront() {
@@ -146,7 +146,7 @@ function ProductPage({ id }: { id: string }) {
       <div className="flex flex-col justify-center py-2"><span className="section-label">{product.category}</span><h1 className="display mt-3 text-4xl font-semibold leading-tight tracking-[-.05em]">{product.title}</h1>
         <p className="mt-4 max-w-lg text-[15px] leading-7 text-[#65716c]" data-testid={`text-product-description-${product.id}`}>{product.description}</p>
         <div className="mt-6 flex items-baseline gap-3"><strong className="display text-3xl">{money(product.price)}</strong><del className="text-[#849089]">{money(product.originalPrice)}</del><span className="badge badge-green">Save {Math.max(0,Math.round((1-product.price/product.originalPrice)*100))}%</span></div>
-        <div className="mt-7 flex flex-wrap items-center gap-3">{product.inStock ? <Link href={`/checkout/${product.id}`} className="btn btn-primary !px-6 !py-3 no-underline" data-testid="button-buy-product">Continue to payment <ArrowRight size={17}/></Link> : <button disabled className="btn btn-primary" data-testid="button-product-outofstock">Currently unavailable</button>}<span className="flex items-center gap-2 text-xs text-[#6b7a72]"><ShieldCheck size={16} className="text-[#17675b]"/> Manual payment, verified delivery</span></div>
+        <div className="mt-7 flex flex-wrap items-center gap-3"><Link href={`/checkout/${product.id}`} className="btn btn-primary !px-6 !py-3 no-underline" data-testid="button-buy-product">Continue to payment <ArrowRight size={17}/></Link><span className="flex items-center gap-2 text-xs text-[#6b7a72]"><ShieldCheck size={16} className="text-[#17675b]"/> Manual payment, verified delivery</span></div>
         <div className="mt-8 grid max-w-lg grid-cols-2 gap-3"><div className="rounded-xl bg-[#f0ece2] p-4"><strong className="display flex items-center gap-2 text-sm"><Ticket size={15} className="text-[#17675b]"/> Digital delivery</strong><p className="mt-2 text-xs leading-5 text-[#6b7a72]">Your code appears on a private order status page.</p></div><div className="rounded-xl bg-[#f0ece2] p-4"><strong className="display flex items-center gap-2 text-sm"><Clock3 size={15} className="text-[#17675b]"/> Human checked</strong><p className="mt-2 text-xs leading-5 text-[#6b7a72]">We verify your UPI payment before fulfillment.</p></div></div>
       </div>
     </div>
@@ -199,7 +199,7 @@ function CheckoutPage({ id }: { id: string }) {
           </div>
         </div>
         {formError&&<div className="mt-4 rounded-lg bg-[#fff4db] px-3 py-2.5 text-xs text-[#775a1c]" role="status" data-testid="status-checkout-error">{formError}</div>}
-        <button type="submit" disabled={createOrder.isPending || !product.inStock} className="btn btn-primary mt-5 w-full !py-3.5" data-testid="button-submit-order">{createOrder.isPending?<><RefreshCw size={16} className="animate-spin"/> Placing your order…</>:<>I've paid — place my order <ArrowRight size={16}/></>}</button>
+        <button type="submit" disabled={createOrder.isPending} className="btn btn-primary mt-5 w-full !py-3.5" data-testid="button-submit-order">{createOrder.isPending?<><RefreshCw size={16} className="animate-spin"/> Placing your order…</>:<>I've paid — place my order <ArrowRight size={16}/></>}</button>
         <p className="mt-3 text-center text-[10px] leading-5 text-[#859088]">Your order is saved for manual payment review. No automatic UTR verification is performed.</p>
       </form>
     </div>
@@ -260,13 +260,13 @@ function AdminPanel() {
   const logout=useAdminLogout({request:{credentials:'same-origin'}});
   const [tab,setTab]=useState<'orders'|'products'|'settings'>('orders');
   const [editId,setEditId]=useState('');
-   const [form,setForm]=useState({title:'',description:'',price:'',originalPrice:'',category:'',inStock:true,images:[] as string[]});
+    const [form,setForm]=useState({title:'',description:'',price:'',originalPrice:'',category:'',images:[] as string[]});
    const [imagesReady,setImagesReady]=useState(true);
   const [upiId,setUpiId]=useState(''); const [qrImageData,setQrImageData]=useState(''); const [notice,setNotice]=useState('');
   const authenticated=!!session.data?.authenticated;
    const updateProduct=useUpdateProduct({request:{credentials:'same-origin'}}); const updateSettings=useUpdateStoreSettings({request:{credentials:'same-origin'}}); const confirm=useConfirmOrder({request:{credentials:'same-origin'}}); const reject=useRejectOrder({request:{credentials:'same-origin'}});
-   const setProductForm=(p:Product)=>{setEditId(p.id);setForm({title:p.title,description:p.description,price:String(p.price),originalPrice:String(p.originalPrice),category:p.category,inStock:p.inStock,images:p.images??[]});setImagesReady(true);setNotice('');};
-   const saveProduct=(e:React.FormEvent)=>{e.preventDefault();if(!editId)return;if(!imagesReady){setNotice('Wait for image uploads to finish or remove any failed uploads before saving.');return;}updateProduct.mutate({id:editId,data:{title:form.title,description:form.description,price:Number(form.price),originalPrice:Number(form.originalPrice),category:form.category,inStock:form.inStock,images:form.images}},{onSuccess:async()=>{setNotice('Product saved.');await qc.invalidateQueries({queryKey:getListProductsQueryKey()});await qc.invalidateQueries({queryKey:getGetProductQueryKey(editId)});},onError:e=>setNotice(errorMessage(e))});};
+    const setProductForm=(p:Product)=>{setEditId(p.id);setForm({title:p.title,description:p.description,price:String(p.price),originalPrice:String(p.originalPrice),category:p.category,images:p.images??[]});setImagesReady(true);setNotice('');};
+    const saveProduct=(e:React.FormEvent)=>{e.preventDefault();if(!editId)return;if(!imagesReady){setNotice('Wait for image uploads to finish or remove any failed uploads before saving.');return;}updateProduct.mutate({id:editId,data:{title:form.title,description:form.description,price:Number(form.price),originalPrice:Number(form.originalPrice),category:form.category,images:form.images}},{onSuccess:async()=>{setNotice('Product saved.');await qc.invalidateQueries({queryKey:getListProductsQueryKey()});await qc.invalidateQueries({queryKey:getGetProductQueryKey(editId)});},onError:e=>setNotice(errorMessage(e))});};
   const saveSettings=(e:React.FormEvent)=>{e.preventDefault();updateSettings.mutate({data:{upiId, ...(qrImageData?{qrImageData}:{})}},{onSuccess:async()=>{setNotice('Payment settings saved.');await qc.invalidateQueries({queryKey:getGetStoreSettingsQueryKey()});},onError:e=>setNotice(errorMessage(e))});};
   useEffect(()=>{if(settingsQuery.data)setUpiId(settingsQuery.data.upiId);},[settingsQuery.data?.upiId]);
   if(session.isLoading)return <div className="shell py-12"><div className="skeleton mx-auto h-[380px] max-w-[450px]"/></div>;
@@ -295,7 +295,7 @@ function AdminPanel() {
           <label className="text-xs font-bold">Original price (₹)<input className="field mt-1.5 text-sm" type="number" min="1" value={form.originalPrice} onChange={e=>setForm({...form,originalPrice:e.target.value})} required data-testid="input-product-original-price"/></label>
           <label className="text-xs font-bold sm:col-span-2">Description<textarea className="field mt-1.5 min-h-24 resize-y text-sm" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} required data-testid="input-product-description"/></label>
           <ProductImagesEditor key={editId} productId={editId} images={form.images} onChange={images=>setForm(current=>({...current,images}))} onReadyChange={setImagesReady}/>
-          <label className="flex items-center gap-3 text-sm font-semibold sm:col-span-2"><input type="checkbox" checked={form.inStock} onChange={e=>setForm({...form,inStock:e.target.checked})} className="h-4 w-4 accent-[#17675b]" data-testid="input-product-stock"/> Available for purchase</label>
+          <div className="flex items-center gap-2 text-sm font-semibold text-[#17675b] sm:col-span-2"><span className="badge badge-green">In stock</span><span>Availability is always enabled for every product.</span></div>
           <div className="flex gap-2 sm:col-span-2"><button disabled={updateProduct.isPending||!imagesReady} className="btn btn-primary" data-testid="button-save-product">{updateProduct.isPending?'Saving…':'Save product'}</button><button type="button" className="btn btn-outline" onClick={()=>{setEditId('');setImagesReady(true);}} data-testid="button-cancel-product-edit">Cancel</button></div>
         </form>:<div className="mt-8 rounded-xl border border-dashed border-[#ccd3ca] p-8 text-center"><ImagePlus size={24} className="mx-auto text-[#7d8a82]"/><p className="mt-3 text-sm font-semibold">Pick an item from your shelf</p><p className="mt-1 text-xs text-[#75817b]">Its details will open here for editing.</p></div>}
       </div>

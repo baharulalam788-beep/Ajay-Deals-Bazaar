@@ -18,5 +18,10 @@ export interface Product {
      */
   images: string[];
   category: string;
+  /** @minimum 0 */
+  stock: number;
   inStock: boolean;
+  /** @minimum 0 */
+  quantity: number;
+  isOutOfStock: boolean;
 }

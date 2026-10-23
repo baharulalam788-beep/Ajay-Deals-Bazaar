@@ -24,6 +24,10 @@ export const listProductsResponseImagesItemMax = 500;
 
 export const listProductsResponseImagesMax = 15;
 
+export const listProductsResponseStockMin = 0;
+
+export const listProductsResponseQuantityMin = 0;
+
 
 
 export const ListProductsResponseItem = zod.object({
@@ -34,7 +38,10 @@ export const ListProductsResponseItem = zod.object({
   "originalPrice": zod.number(),
   "images": zod.array(zod.string().max(listProductsResponseImagesItemMax)).max(listProductsResponseImagesMax),
   "category": zod.string(),
-  "inStock": zod.boolean()
+  "stock": zod.number().int().min(listProductsResponseStockMin),
+  "inStock": zod.boolean(),
+  "quantity": zod.number().int().min(listProductsResponseQuantityMin),
+  "isOutOfStock": zod.boolean()
 })
 export const ListProductsResponse = zod.array(ListProductsResponseItem)
 
@@ -50,6 +57,10 @@ export const getProductResponseImagesItemMax = 500;
 
 export const getProductResponseImagesMax = 15;
 
+export const getProductResponseStockMin = 0;
+
+export const getProductResponseQuantityMin = 0;
+
 
 
 export const GetProductResponse = zod.object({
@@ -60,7 +71,10 @@ export const GetProductResponse = zod.object({
   "originalPrice": zod.number(),
   "images": zod.array(zod.string().max(getProductResponseImagesItemMax)).max(getProductResponseImagesMax),
   "category": zod.string(),
-  "inStock": zod.boolean()
+  "stock": zod.number().int().min(getProductResponseStockMin),
+  "inStock": zod.boolean(),
+  "quantity": zod.number().int().min(getProductResponseQuantityMin),
+  "isOutOfStock": zod.boolean()
 })
 
 
@@ -226,13 +240,16 @@ export const UpdateProductBody = zod.object({
   "price": zod.number(),
   "originalPrice": zod.number(),
   "images": zod.array(zod.string().max(updateProductBodyImagesItemMax)).max(updateProductBodyImagesMax),
-  "category": zod.string(),
-  "inStock": zod.boolean()
+  "category": zod.string()
 })
 
 export const updateProductResponseImagesItemMax = 500;
 
 export const updateProductResponseImagesMax = 15;
+
+export const updateProductResponseStockMin = 0;
+
+export const updateProductResponseQuantityMin = 0;
 
 
 
@@ -244,7 +261,10 @@ export const UpdateProductResponse = zod.object({
   "originalPrice": zod.number(),
   "images": zod.array(zod.string().max(updateProductResponseImagesItemMax)).max(updateProductResponseImagesMax),
   "category": zod.string(),
-  "inStock": zod.boolean()
+  "stock": zod.number().int().min(updateProductResponseStockMin),
+  "inStock": zod.boolean(),
+  "quantity": zod.number().int().min(updateProductResponseQuantityMin),
+  "isOutOfStock": zod.boolean()
 })
 
 

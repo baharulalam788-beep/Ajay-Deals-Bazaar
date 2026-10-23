@@ -9,12 +9,22 @@ export type ProductRecord = {
   originalPrice: number;
   images: string[];
   category: string;
+  stock: number;
   inStock: boolean;
+  quantity: number;
+  isOutOfStock: boolean;
 };
 
-type LegacyProductRecord = Omit<ProductRecord, "images"> & {
+type LegacyProductRecord = Omit<
+  ProductRecord,
+  "images" | "stock" | "inStock" | "quantity" | "isOutOfStock"
+> & {
   imageUrl?: string;
   images?: unknown;
+  stock?: number;
+  inStock?: boolean;
+  quantity?: number;
+  isOutOfStock?: boolean;
 };
 
 export type OrderRecord = {
@@ -84,6 +94,14 @@ export async function readProducts(): Promise<ProductRecord[]> {
         : [];
     const images = validImages.slice(0, 15);
     if (
+      product.stock !== 100 ||
+      product.inStock !== true ||
+      product.quantity !== 100 ||
+      product.isOutOfStock !== false
+    ) {
+      needsMigration = true;
+    }
+    if (
       !Array.isArray(rawImages) ||
       product.imageUrl !== undefined ||
       validImages.length !== images.length ||
@@ -92,7 +110,14 @@ export async function readProducts(): Promise<ProductRecord[]> {
       needsMigration = true;
     }
     const { imageUrl: _legacyImageUrl, ...currentFields } = product;
-    return { ...currentFields, images } as ProductRecord;
+    return {
+      ...currentFields,
+      images,
+      stock: 100,
+      inStock: true,
+      quantity: 100,
+      isOutOfStock: false,
+    };
   });
   if (needsMigration) await writeJson("products", products);
   return products;

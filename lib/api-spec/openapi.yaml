@@ -325,7 +325,7 @@ components:
         - status
     Product:
       type: object
-      required: [id, title, description, price, originalPrice, images, category, inStock]
+      required: [id, title, description, price, originalPrice, images, category, stock, inStock, quantity, isOutOfStock]
       properties:
         id: { type: string }
         title: { type: string }
@@ -337,7 +337,10 @@ components:
           maxItems: 15
           items: { type: string, maxLength: 500 }
         category: { type: string }
+        stock: { type: integer, minimum: 0 }
         inStock: { type: boolean }
+        quantity: { type: integer, minimum: 0 }
+        isOutOfStock: { type: boolean }
     ProductImageUploadInput:
       type: object
       required: [imageData]
@@ -400,7 +403,7 @@ components:
         authenticated: { type: boolean }
     ProductUpdate:
       type: object
-      required: [title, description, price, originalPrice, images, category, inStock]
+      required: [title, description, price, originalPrice, images, category]
       properties:
         title: { type: string }
         description: { type: string }
@@ -411,7 +414,6 @@ components:
           maxItems: 15
           items: { type: string, maxLength: 500 }
         category: { type: string }
-        inStock: { type: boolean }
     KeyInput:
       type: object
       required: [key]

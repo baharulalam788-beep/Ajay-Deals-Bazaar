@@ -3,8 +3,8 @@ name: Ajay Deals Bazaar product scope
 description: The allowed product and fulfillment scope for Ajay Deals Bazaar.
 ---
 
-Ajay Deals Bazaar sells gaming top-up codes and e-vouchers only. Do not add game-account listings or delivery of account passwords or login OTPs.
+Ajay Deals Bazaar's Free Fire account listings are always available. Every product remains purchasable with stock 100, quantity 100, `inStock: true`, and `isOutOfStock: false`; inventory must not block an order.
 
-**Why:** the user explicitly removed game-account sales from the product scope.
+**Why:** the user confirmed Free Fire accounts are always available and asked for orders to be accepted even when recorded inventory is 0.
 
-**How to apply:** keep catalog examples, checkout, order status, and fulfillment limited to transferable digital products and their unlock keys.
+**How to apply:** normalize availability in the persisted catalog and API, keep purchase controls enabled, and do not validate inventory when creating orders.

@@ -27,17 +27,13 @@ import { seedProductsIfEmpty } from "../lib/store-seed";
 const router: IRouter = Router();
 const orderBodyParser = express.json({ limit: "8mb" });
 
-function isSupportedDigitalProduct(product: ProductRecord): boolean {
-  const details = `${product.title} ${product.description} ${product.category}`.toLowerCase();
-  const isVoucherOrTopUp = /\btop[\s-]?up\b|\bvoucher\b|\bgift card\b/.test(details);
-  const mentionsAccountCredentials = /\baccount\b|\bpassword\b|\blogin\b|\brecovery\b|\botp\b|\bid\s*pass\b/.test(details);
-  return isVoucherOrTopUp && !mentionsAccountCredentials;
-}
-
 function storefrontProduct(product: ProductRecord): ProductRecord {
   return {
     ...product,
-    inStock: product.inStock && isSupportedDigitalProduct(product),
+    stock: 100,
+    inStock: true,
+    quantity: 100,
+    isOutOfStock: false,
   };
 }
 
@@ -81,14 +77,6 @@ router.post("/store/orders", orderBodyParser, async (req, res): Promise<void> =>
   const product = products.find((item) => item.id === body.data.productId);
   if (!product) {
     res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  if (!isSupportedDigitalProduct(product)) {
-    res.status(409).json({ error: "This store currently supports gaming top-up codes and e-vouchers only." });
-    return;
-  }
-  if (!product.inStock) {
-    res.status(409).json({ error: "This product is currently out of stock." });
     return;
   }
   const orders = await readJson<OrderRecord[]>("orders");

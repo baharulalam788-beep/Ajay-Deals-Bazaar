@@ -1,1 +1,1 @@
-- [Ajay Deals Bazaar product scope](ajay-deals-bazaar-scope.md) — sell top-up codes and e-vouchers only; do not add game-account sales.
+- [Ajay Deals Bazaar availability policy](ajay-deals-bazaar-scope.md) — Free Fire accounts remain purchasable; never use inventory as a sales gate.
